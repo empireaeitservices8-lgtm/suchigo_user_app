@@ -1,4 +1,4 @@
-import 'package:PROJECT_NAME_PLACEHOLDER/config/app_config.dart';
+import 'package:suchigo_user_app/config/app_config.dart';
 import 'package:flutter/services.dart';
 
 import '/providers/language_provider.dart';

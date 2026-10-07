@@ -1,21 +1,20 @@
-import 'package:PROJECT_NAME_PLACEHOLDER/providers/view_model.dart';
+import 'package:suchigo_user_app/providers/view_model.dart';
+import '../model/splash_model.dart';
+import '../repo/splash_repo.dart';
 
-class SplashViewModel extends ViewModel{
+class SplashViewModel extends ViewModel {
+  final SplashRepository _repository;
+  SplashModel _splashModel = const SplashModel();
 
-   bool? _checkBoxVal;
-
-  bool? get checkBoxVal => _checkBoxVal;
-
-  set checkBoxVal(bool? val) {
-    _checkBoxVal = val;
-    notifyListeners();
+  SplashViewModel({SplashRepository? repository})
+      : _repository = repository ?? SplashRepositoryImpl() {
+    initSplash();
   }
-     bool? _checkRadioButtonVal;
 
-  bool? get checkRadioButtonVal => _checkRadioButtonVal;
+  SplashModel get splashModel => _splashModel;
 
-  set checkRadioButtonVal(bool? val) {
-    _checkRadioButtonVal = val;
+  void initSplash() async {
+    _splashModel = await _repository.getSplashData();
     notifyListeners();
   }
 }

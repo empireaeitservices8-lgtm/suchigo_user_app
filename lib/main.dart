@@ -1,8 +1,8 @@
 import 'package:adaptive_theme/adaptive_theme.dart';
-import 'package:PROJECT_NAME_PLACEHOLDER/config/app_config.dart';
-import 'package:PROJECT_NAME_PLACEHOLDER/l10n/app_localizations.dart';
+import 'package:suchigo_user_app/config/app_config.dart';
+import 'package:suchigo_user_app/l10n/app_localizations.dart';
 
-import 'package:PROJECT_NAME_PLACEHOLDER/utils/extensions.dart';
+import 'package:suchigo_user_app/utils/extensions.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';

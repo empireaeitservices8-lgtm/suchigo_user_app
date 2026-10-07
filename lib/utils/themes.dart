@@ -1,5 +1,5 @@
-import 'package:PROJECT_NAME_PLACEHOLDER/utils/app_palette.dart';
-import 'package:PROJECT_NAME_PLACEHOLDER/utils/brand_colors.dart';
+import 'package:suchigo_user_app/utils/app_palette.dart';
+import 'package:suchigo_user_app/utils/brand_colors.dart';
 import 'package:flutter/material.dart';
 
 // Central seed color for the app's ColorScheme (brand primary blue)

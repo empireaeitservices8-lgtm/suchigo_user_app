@@ -1,4 +1,4 @@
-import 'package:PROJECT_NAME_PLACEHOLDER/l10n/app_localizations.dart';
+import 'package:suchigo_user_app/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 
 class Localization {

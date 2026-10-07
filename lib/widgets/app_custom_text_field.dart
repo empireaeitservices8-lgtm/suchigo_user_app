@@ -1,5 +1,5 @@
-import 'package:PROJECT_NAME_PLACEHOLDER/utils/colors.dart';
-import 'package:PROJECT_NAME_PLACEHOLDER/utils/styles.dart';
+import 'package:suchigo_user_app/utils/colors.dart';
+import 'package:suchigo_user_app/utils/styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 

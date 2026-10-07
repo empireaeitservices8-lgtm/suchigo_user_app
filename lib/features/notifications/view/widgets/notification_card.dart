@@ -1,0 +1,130 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import '../../model/notification_model.dart';
+
+class NotificationCard extends StatelessWidget {
+  final NotificationItemModel notification;
+  final VoidCallback? onTap;
+
+  const NotificationCard({
+    super.key,
+    required this.notification,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 16.h),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16.r),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16.r),
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Left Subtle Accent Bar
+              Container(
+                width: 4.w,
+                color: const Color(0xFFCBD5E1),
+              ),
+
+              // Content Body
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 16.w,
+                    vertical: 16.h,
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Circular Grey Bell Icon
+                      Container(
+                        width: 44.w,
+                        height: 44.w,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF1F5F9),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Center(
+                          child: Icon(
+                            Icons.notifications_none_rounded,
+                            color: Color(0xFF64748B),
+                            size: 22,
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 14.w),
+
+                      // Text Info
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Title
+                            Text(
+                              notification.title,
+                              style: TextStyle(
+                                fontSize: 15.sp,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF1E293B),
+                              ),
+                            ),
+                            SizedBox(height: 6.h),
+
+                            // Message
+                            Text(
+                              notification.message,
+                              style: TextStyle(
+                                fontSize: 13.sp,
+                                fontWeight: FontWeight.w400,
+                                color: const Color(0xFF64748B),
+                                height: 1.35,
+                              ),
+                            ),
+                            SizedBox(height: 10.h),
+
+                            // Timestamp
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.access_time_rounded,
+                                  color: Color(0xFF94A3B8),
+                                  size: 15,
+                                ),
+                                SizedBox(width: 6.w),
+                                Text(
+                                  notification.dateTime,
+                                  style: TextStyle(
+                                    fontSize: 12.sp,
+                                    fontWeight: FontWeight.w500,
+                                    color: const Color(0xFF94A3B8),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

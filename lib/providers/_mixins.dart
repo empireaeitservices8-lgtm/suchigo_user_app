@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:PROJECT_NAME_PLACEHOLDER/models/app_error_model.dart';
+import 'package:suchigo_user_app/models/app_error_model.dart';
 
 import '/utils/exceptions.dart';
 import 'package:flutter/material.dart';
@@ -107,7 +107,9 @@ mixin MixinAPIProvider {
                   "not a valid session.",
                   "invalid login details",
                 ].contains(data["message"]?.toString().toLowerCase())) {
-              onShowError(data["message"] ?? ex.message);
+              onShowError(AppError(
+                  message: data["message"]?.toString() ?? ex.message,
+                  response: ex));
               onInvalidToken();
               break;
             }
@@ -126,7 +128,8 @@ mixin MixinAPIProvider {
           if (res != null &&
               res.containsKey('message') &&
               res['message'] != null) {
-            onShowError(res['message']);
+            onShowError(
+                AppError(message: res['message'].toString(), response: ex));
             break;
           }
         }

@@ -1,6 +1,11 @@
-import 'package:PROJECT_NAME_PLACEHOLDER/helpers/url_helpers.dart';
+import 'package:suchigo_user_app/helpers/url_helpers.dart';
 
 String urlBase = UrlHelpers.baseURL;
+
+//Auth
+String urlSendOTP = "${urlBase}otp/send/";
+String urlRegister = "${urlBase}register/";
+String urlLogin = "${urlBase}login/";
 
 //Register
 String urlRegistrationRequestOTP = "${urlBase}register/request-otp";

@@ -1,8 +1,8 @@
 import 'dart:async';
 
-import 'package:PROJECT_NAME_PLACEHOLDER/models/app_error_model.dart';
-import 'package:PROJECT_NAME_PLACEHOLDER/providers/_mixins.dart';
-import 'package:PROJECT_NAME_PLACEHOLDER/utils/extensions.dart';
+import 'package:suchigo_user_app/models/app_error_model.dart';
+import 'package:suchigo_user_app/providers/_mixins.dart';
+import 'package:suchigo_user_app/utils/extensions.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import '_mixins_api.dart';
@@ -41,7 +41,7 @@ class WebAPIService with WebAPIMixin, MixinAPIProvider {
         }
         if (initToken) {
           _dio.options.headers
-              .putIfAbsent('Authorization', () => 'Bearer $token');
+              .putIfAbsent('Authorization', () => 'Token $token');
           debugPrint('Authorization==>${token!}');
         }
         return true;
