@@ -94,6 +94,32 @@ class AboutAppScreen extends StatelessWidget {
 
             // Card 2: Key Highlights
             _buildHighlightsCard(),
+            SizedBox(height: 32.h),
+
+            // Copyright / All Rights Reserved Footer
+            Center(
+              child: Column(
+                children: [
+                  Text(
+                    '© 2026 SuchiGo Inc.',
+                    style: TextStyle(
+                      fontSize: 13.sp,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF64748B),
+                    ),
+                  ),
+                  SizedBox(height: 4.h),
+                  Text(
+                    'All Rights Reserved.',
+                    style: TextStyle(
+                      fontSize: 12.sp,
+                      fontWeight: FontWeight.w400,
+                      color: const Color(0xFF94A3B8),
+                    ),
+                  ),
+                ],
+              ),
+            ),
             SizedBox(height: 24.h),
           ],
         ),
@@ -120,6 +146,7 @@ class AboutAppScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
                 Icons.eco_rounded,
@@ -172,6 +199,7 @@ class AboutAppScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
                 Icons.star_rounded,

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:suchigo_user_app/features/onboarding/view/widgets/suchigo_logo_widget.dart';
 
 class HomeHeader extends StatelessWidget {
   final String userName;
@@ -16,7 +15,7 @@ class HomeHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 18.h),
+      padding: EdgeInsets.fromLTRB(16.w, 10.h, 16.w, 16.h),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.centerLeft,
@@ -34,8 +33,8 @@ class HomeHeader extends StatelessWidget {
           children: [
             // User Avatar Circle
             Container(
-              width: 48.w,
-              height: 48.w,
+              width: 44.w,
+              height: 44.w,
               decoration: const BoxDecoration(
                 color: Colors.white,
                 shape: BoxShape.circle,
@@ -44,53 +43,56 @@ class HomeHeader extends StatelessWidget {
                 child: Text(
                   userName.isNotEmpty ? userName[0].toUpperCase() : 'U',
                   style: TextStyle(
-                    fontSize: 22.sp,
+                    fontSize: 20.sp,
                     fontWeight: FontWeight.w800,
                     color: const Color(0xFF00C853),
                   ),
                 ),
               ),
             ),
-            SizedBox(width: 12.w),
+            SizedBox(width: 10.w),
 
             // User Name & Progress Indicator
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  userName,
-                  style: TextStyle(
-                    fontSize: 18.sp,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                    letterSpacing: 0.5,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    userName.toUpperCase(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                      letterSpacing: 0.3,
+                    ),
                   ),
-                ),
-                SizedBox(height: 5.h),
-                // Progress Bar
-                Container(
-                  width: 90.w,
-                  height: 5.h,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.35),
-                    borderRadius: BorderRadius.circular(3.r),
-                  ),
-                  child: FractionallySizedBox(
-                    alignment: Alignment.centerLeft,
-                    widthFactor: progress,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(3.r),
+                  SizedBox(height: 4.h),
+                  // Progress Bar
+                  Container(
+                    width: 75.w,
+                    height: 4.h,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.35),
+                      borderRadius: BorderRadius.circular(3.r),
+                    ),
+                    child: FractionallySizedBox(
+                      alignment: Alignment.centerLeft,
+                      widthFactor: progress.clamp(0.0, 1.0),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(3.r),
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-
-            const Spacer(),
+            SizedBox(width: 8.w),
 
             // Notification Bell with Badge
             InkWell(
@@ -102,7 +104,7 @@ class HomeHeader extends StatelessWidget {
                 clipBehavior: Clip.none,
                 children: [
                   Container(
-                    padding: EdgeInsets.all(8.w),
+                    padding: EdgeInsets.all(7.w),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.2),
                       shape: BoxShape.circle,
@@ -110,12 +112,12 @@ class HomeHeader extends StatelessWidget {
                     child: const Icon(
                       Icons.notifications_none_rounded,
                       color: Colors.white,
-                      size: 24,
+                      size: 22,
                     ),
                   ),
                   Positioned(
-                    top: 8.h,
-                    right: 8.w,
+                    top: 6.h,
+                    right: 6.w,
                     child: Container(
                       width: 7.w,
                       height: 7.w,
@@ -128,16 +130,16 @@ class HomeHeader extends StatelessWidget {
                 ],
               ),
             ),
-            SizedBox(width: 10.w),
+            SizedBox(width: 8.w),
 
             // SuchiGo Pill Badge on Top Right
             Container(
               padding: EdgeInsets.symmetric(
-                horizontal: 10.w,
-                vertical: 6.h,
+                horizontal: 8.w,
+                vertical: 5.h,
               ),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.88),
+                color: Colors.white.withValues(alpha: 0.92),
                 borderRadius: BorderRadius.circular(20.r),
                 boxShadow: [
                   BoxShadow(
@@ -150,10 +152,20 @@ class HomeHeader extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  SuchiGoLogoWidget(
-                    size: 28,
-                    showTagline: false,
-                    showText: false,
+                  Container(
+                    width: 24.w,
+                    height: 24.w,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFF1F8F4),
+                      shape: BoxShape.circle,
+                    ),
+                    padding: EdgeInsets.all(2.5.r),
+                    child: Center(
+                      child: Image.asset(
+                        'assets/images/suchigo_icon.png',
+                        fit: BoxFit.contain,
+                      ),
+                    ),
                   ),
                   SizedBox(width: 6.w),
                   Column(
@@ -172,7 +184,7 @@ class HomeHeader extends StatelessWidget {
                       Text(
                         'Schedule. Collect. Sustain',
                         style: TextStyle(
-                          fontSize: 6.sp,
+                          fontSize: 5.8.sp,
                           fontWeight: FontWeight.w500,
                           color: const Color(0xFF78909C),
                           height: 1.1,

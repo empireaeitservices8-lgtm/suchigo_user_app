@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <!-- Top handle -->
+  <path d="M13 7.5C13 6.4 13.9 5.5 15 5.5H17C18.1 5.5 19 6.4 19 7.5" stroke="#5A738E" stroke-width="2.2" stroke-linecap="round"/>
+  <!-- Lid -->
+  <path d="M8 8.5H24" stroke="#5A738E" stroke-width="2.4" stroke-linecap="round"/>
+  <!-- Hollow Bin Body -->
+  <path d="M9.8 9.8L11 24.2C11.1 25.8 12.4 27 14 27H18C19.6 27 20.9 25.8 21 24.2L22.2 9.8" stroke="#5A738E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

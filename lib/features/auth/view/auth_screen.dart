@@ -6,6 +6,7 @@ import 'package:suchigo_user_app/features/home/view/home_screen.dart';
 import 'package:suchigo_user_app/features/onboarding/view/widgets/suchigo_logo_widget.dart';
 import '../model/auth_model.dart';
 import '../view_model/auth_view_model.dart';
+import 'package:suchigo_user_app/widgets/app_button_widget.dart';
 import 'complete_profile_screen.dart';
 import 'widgets/otp_verification_sheet.dart';
 
@@ -41,12 +42,16 @@ class _AuthScreenState extends State<AuthScreen> {
                 context,
                 CompleteProfileScreen.routeName,
                 arguments: CompleteProfileScreenArgs(
-                  phoneNumber: _viewModel.phoneNumber,
+                  phoneNumber: _viewModel.fullPhoneNumber,
                   otp: _viewModel.otpCode,
                 ),
               );
             } else {
-              Navigator.pushReplacementNamed(context, HomeScreen.routeName);
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                HomeScreen.routeName,
+                (route) => false,
+              );
             }
           },
         ),
@@ -147,7 +152,7 @@ class _AuthScreenState extends State<AuthScreen> {
                             height: 56.h,
                             padding: EdgeInsets.symmetric(horizontal: 16.w),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFFAFCFA),
+                              color: Colors.white,
                               borderRadius: BorderRadius.circular(16.r),
                               border: Border.all(
                                 color: const Color(0xFFE2E8F0),
@@ -204,8 +209,12 @@ class _AuthScreenState extends State<AuthScreen> {
                                         fontWeight: FontWeight.w400,
                                         color: const Color(0xFF94A3B8),
                                       ),
+                                      filled: false,
+                                      fillColor: Colors.transparent,
                                       counterText: '',
                                       border: InputBorder.none,
+                                      enabledBorder: InputBorder.none,
+                                      focusedBorder: InputBorder.none,
                                       contentPadding: EdgeInsets.zero,
                                     ),
                                   ),
@@ -216,78 +225,41 @@ class _AuthScreenState extends State<AuthScreen> {
                           SizedBox(height: 24.h),
 
                           // Send OTP Button
-                          SizedBox(
-                            width: double.infinity,
-                            height: 52.h,
-                            child: ElevatedButton(
-                              onPressed: vm.isPhoneValid && !vm.isLoading
-                                  ? () async {
-                                      final sent = await vm.sendOTP();
-                                      if (!context.mounted) return;
-                                      if (sent) {
-                                        _showOTPBottomSheet();
-                                      } else if (vm.isNotRegistered) {
-                                        vm.setMode(AuthMode.register);
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(SnackBar(
-                                          content: Text(
-                                            vm.errorMessage ??
-                                                'No account found. Switched to Register mode.',
-                                          ),
-                                          backgroundColor:
-                                              const Color(0xFF166534),
-                                        ));
-                                      } else if (vm.errorMessage != null) {
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(SnackBar(
-                                          content: Text(vm.errorMessage!),
-                                        ));
-                                      }
-                                    }
-                                  : null,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: vm.isPhoneValid
-                                    ? const Color(0xFF166534)
-                                    : const Color(0xFFE2E8F0),
-                                elevation: 0,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16.r),
-                                ),
-                              ),
-                              child: vm.isLoading
-                                  ? const SizedBox(
-                                      width: 24,
-                                      height: 24,
-                                      child: CircularProgressIndicator(
-                                        color: Colors.white,
-                                        strokeWidth: 2.5,
-                                      ),
-                                    )
-                                  : Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Text(
-                                          'Send OTP',
-                                          style: TextStyle(
-                                            fontSize: 16.sp,
-                                            fontWeight: FontWeight.w700,
-                                            color: vm.isPhoneValid
-                                                ? Colors.white
-                                                : const Color(0xFF94A3B8),
-                                          ),
-                                        ),
-                                        SizedBox(width: 8.w),
-                                        Icon(
-                                          Icons.east_rounded,
-                                          color: vm.isPhoneValid
-                                              ? Colors.white
-                                              : const Color(0xFF94A3B8),
-                                          size: 18,
-                                        ),
-                                      ],
-                                    ),
+                          AppButton(
+                            text: 'Send OTP',
+                            isEnabled: vm.isPhoneValid,
+                            isLoading: vm.isLoading,
+                            suffixIcon: Icon(
+                              Icons.east_rounded,
+                              color: vm.isPhoneValid
+                                  ? Colors.white
+                                  : const Color(0xFF94A3B8),
+                              size: 18.sp,
                             ),
+                            onTap: () async {
+                              final sent = await vm.sendOTP();
+                              if (!context.mounted) return;
+                              if (sent) {
+                                _showOTPBottomSheet();
+                              } else if (vm.isNotRegistered) {
+                                vm.setMode(AuthMode.register);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      vm.errorMessage ??
+                                          'No account found. Switched to Register mode.',
+                                    ),
+                                    backgroundColor: const Color(0xFF166534),
+                                  ),
+                                );
+                              } else if (vm.errorMessage != null) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(vm.errorMessage!),
+                                  ),
+                                );
+                              }
+                            },
                           ),
                           SizedBox(height: 24.h),
 

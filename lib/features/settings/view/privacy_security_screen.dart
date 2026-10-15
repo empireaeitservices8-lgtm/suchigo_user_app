@@ -11,7 +11,7 @@ class PrivacySecurityScreen extends StatefulWidget {
 }
 
 class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
-  // Track expanded index for accordions
+  // Track expanded index for accordions (null = all collapsed initially as in screenshot)
   int? _expandedIndex;
 
   final List<Map<String, dynamic>> _privacyItems = [
@@ -19,25 +19,25 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
       'icon': Icons.shield_rounded,
       'title': 'Data Protection & Encryption',
       'content':
-          'All your personal data, transaction records, and communication are encrypted end-to-end using AES-256 and SSL/TLS standards. We strictly adhere to industry safety protocols and never store unencrypted sensitive information on our servers.',
+          'SuchiGo takes your data security seriously. All personal information, billing details, and collection logs are encrypted in transit using SSL/TLS and at rest using AES-256 standard encryption. Your data is strictly secured in compliance with global data privacy guidelines.',
     },
     {
       'icon': Icons.location_on_rounded,
       'title': 'Location Data Usage',
       'content':
-          'Your location is used solely to pinpoint pickup addresses accurately and enable live tracking of collection vehicles. We never share or sell real-time GPS coordinates to any unauthorized third parties.',
+          'We collect and process your geographical location data solely to facilitate optimized waste pickup routing, connect you to local waste collectors, and track your active collection requests in real-time. Your location is never shared with third parties for marketing purposes.',
     },
     {
-      'icon': Icons.manage_accounts_rounded,
+      'icon': Icons.person_search_rounded,
       'title': 'Personal Information Sharing',
       'content':
-          'We do not sell your personal profile data. Minimal contact information (name, address, phone number) is shared strictly with the assigned sanitation collector to fulfill your pickup service.',
+          'To facilitate smooth waste processing, your basic details (Name, Contact Number, Pickup Address) are shared only with the designated collection agent assigned to your request. We do not sell or lease your personal information to third-party advertisers.',
     },
     {
-      'icon': Icons.delete_rounded,
+      'icon': Icons.delete_forever_rounded,
       'title': 'Account & Data Deletion',
       'content':
-          'You have complete ownership of your personal data. You can request permanent deletion of your profile and past pickup logs at any time by contacting our support team or visiting account settings.',
+          'You hold the right to delete your SuchiGo account and erase your historical records at any time. Under settings, you can submit a Request Account Deletion, which permanently purges your personal profile, credentials, and address list from our active databases within 14 business days.',
     },
   ];
 
@@ -46,13 +46,13 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F8F5),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1D723B),
+        backgroundColor: const Color(0xFF166534),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(
             Icons.chevron_left_rounded,
             color: Colors.white,
-            size: 32,
+            size: 30,
           ),
           onPressed: () => Navigator.pop(context),
         ),
@@ -60,18 +60,20 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
           'Privacy & Security',
           style: TextStyle(
             color: Colors.white,
-            fontSize: 20.sp,
+            fontSize: 19.sp,
             fontWeight: FontWeight.w700,
           ),
         ),
+        centerTitle: false,
       ),
       body: SingleChildScrollView(
         padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Top Green Status Banner Card
+            // Top Green Connection Banner
             _buildSecureConnectionBanner(),
+
             SizedBox(height: 22.h),
 
             // Section Heading
@@ -85,10 +87,11 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
             ),
             SizedBox(height: 14.h),
 
-            // Policy Accordion List
+            // Policy Accordions List
             ...List.generate(_privacyItems.length, (index) {
               final item = _privacyItems[index];
               final isExpanded = _expandedIndex == index;
+
               return Padding(
                 padding: EdgeInsets.only(bottom: 12.h),
                 child: _buildPolicyAccordionItem(
@@ -101,10 +104,11 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
               );
             }),
 
-            SizedBox(height: 12.h),
+            SizedBox(height: 16.h),
 
             // Bottom Security Tips Card
             _buildSecurityTipsCard(),
+
             SizedBox(height: 24.h),
           ],
         ),
@@ -117,11 +121,11 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
       width: double.infinity,
       padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 18.h),
       decoration: BoxDecoration(
-        color: const Color(0xFF1D723B),
+        color: const Color(0xFF166534),
         borderRadius: BorderRadius.circular(20.r),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF1D723B).withValues(alpha: 0.25),
+            color: const Color(0xFF166534).withValues(alpha: 0.25),
             blurRadius: 14,
             offset: const Offset(0, 6),
           ),
@@ -129,12 +133,12 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
       ),
       child: Row(
         children: [
-          // Circular shield check icon
+          // Circular shield check icon badge
           Container(
             width: 52.w,
             height: 52.w,
             decoration: BoxDecoration(
-              color: const Color(0xFF4BB14E).withValues(alpha: 0.75),
+              color: Colors.white.withValues(alpha: 0.2),
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -205,7 +209,7 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
           },
           borderRadius: BorderRadius.circular(16.r),
           child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
+            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -213,7 +217,7 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
                   children: [
                     Icon(
                       icon,
-                      color: const Color(0xFF1D723B),
+                      color: const Color(0xFF166534),
                       size: 22.sp,
                     ),
                     SizedBox(width: 14.w),
@@ -237,9 +241,9 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
                   ],
                 ),
                 if (isExpanded) ...[
-                  SizedBox(height: 10.h),
+                  SizedBox(height: 12.h),
                   const Divider(height: 1, color: Color(0xFFF1F5F9)),
-                  SizedBox(height: 10.h),
+                  SizedBox(height: 12.h),
                   Text(
                     content,
                     style: TextStyle(

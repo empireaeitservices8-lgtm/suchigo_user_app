@@ -8,6 +8,7 @@ class WalletViewModel extends ViewModel {
 
   WalletDataModel _walletData = const WalletDataModel();
   final TextEditingController amountController = TextEditingController();
+  String? _errorMessage;
 
   WalletViewModel({WalletRepository? repository})
       : _repository = repository ?? WalletRepositoryImpl() {
@@ -17,11 +18,17 @@ class WalletViewModel extends ViewModel {
   WalletDataModel get walletData => _walletData;
   double get availableBalance => _walletData.availableBalance;
   List<WalletTransactionModel> get transactions => _walletData.transactions;
+  String? get errorMessage => _errorMessage;
 
   void loadWalletData() async {
     isLoading = true;
+    _errorMessage = null;
     try {
-      _walletData = await _repository.getWalletData();
+      _walletData = await _repository.getWalletData(
+        onError: (error) {
+          _errorMessage = error.message;
+        },
+      );
     } catch (e) {
       _walletData = const WalletDataModel();
     } finally {
@@ -35,22 +42,83 @@ class WalletViewModel extends ViewModel {
     notifyListeners();
   }
 
-  Future<bool> proceedToAddMoney() async {
+  Future<RazorpayOrderModel?> initiateRazorpayOrder({
+    Function(String message)? onError,
+  }) async {
     final amount = double.tryParse(amountController.text.trim()) ?? 0.0;
-    if (amount <= 0) return false;
+    if (amount <= 0) {
+      const msg = 'Please enter a valid amount';
+      _errorMessage = msg;
+      onError?.call(msg);
+      return null;
+    }
 
     isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
     try {
-      final success = await _repository.addMoney(amount);
+      final receiptId =
+          'receipt_refill_${DateTime.now().millisecondsSinceEpoch}';
+      final order = await _repository.createRazorpayOrder(
+        amount,
+        currency: 'INR',
+        receipt: receiptId,
+        onError: (error) {
+          _errorMessage = error.message;
+          onError?.call(error.message);
+        },
+      );
+      return order;
+    } catch (e) {
+      const msg = 'Failed to initiate payment';
+      _errorMessage = msg;
+      onError?.call(msg);
+      return null;
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> proceedToAddMoney({Function(String message)? onError}) async {
+    final amount = double.tryParse(amountController.text.trim()) ?? 0.0;
+    if (amount <= 0) {
+      const msg = 'Please enter a valid amount';
+      _errorMessage = msg;
+      onError?.call(msg);
+      return false;
+    }
+
+    isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final receiptId =
+          'receipt_refill_${DateTime.now().millisecondsSinceEpoch}';
+      final success = await _repository.addMoney(
+        amount,
+        currency: 'INR',
+        receipt: receiptId,
+        onError: (error) {
+          _errorMessage = error.message;
+          onError?.call(error.message);
+        },
+      );
       if (success) {
         amountController.clear();
         loadWalletData();
       }
       return success;
     } catch (e) {
+      const msg = 'Failed to proceed with payment';
+      _errorMessage = msg;
+      onError?.call(msg);
       return false;
     } finally {
       isLoading = false;
+      notifyListeners();
     }
   }
 

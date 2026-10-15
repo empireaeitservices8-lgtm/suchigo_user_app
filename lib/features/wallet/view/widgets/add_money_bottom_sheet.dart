@@ -2,10 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
+import '../../model/wallet_model.dart';
 import '../../view_model/wallet_view_model.dart';
+import 'package:suchigo_user_app/widgets/app_button_widget.dart';
 
 class AddMoneyBottomSheet extends StatelessWidget {
-  const AddMoneyBottomSheet({super.key});
+  final ValueChanged<RazorpayOrderModel>? onOrderCreated;
+
+  const AddMoneyBottomSheet({
+    super.key,
+    this.onOrderCreated,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -61,7 +68,7 @@ class AddMoneyBottomSheet extends StatelessWidget {
             height: 56.h,
             padding: EdgeInsets.symmetric(horizontal: 16.w),
             decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFC),
+              color: Colors.white,
               borderRadius: BorderRadius.circular(16.r),
               border: Border.all(
                 color: const Color(0xFFE2E8F0),
@@ -85,7 +92,11 @@ class AddMoneyBottomSheet extends StatelessWidget {
                     fontWeight: FontWeight.w400,
                     color: const Color(0xFF94A3B8),
                   ),
+                  filled: false,
+                  fillColor: Colors.transparent,
                   border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
                   prefixText: '₹ ',
                   prefixStyle: TextStyle(
                     fontSize: 18.sp,
@@ -129,50 +140,30 @@ class AddMoneyBottomSheet extends StatelessWidget {
           SizedBox(height: 24.h),
 
           // Proceed to Pay Button
-          SizedBox(
-            width: double.infinity,
-            height: 52.h,
-            child: ElevatedButton(
-              onPressed: vm.isLoading
-                  ? null
-                  : () async {
-                      final success = await vm.proceedToAddMoney();
-                      if (success && context.mounted) {
-                        Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Money added successfully to wallet!'),
-                            backgroundColor: Color(0xFF1D723B),
-                          ),
-                        );
-                      }
-                    },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1D723B),
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16.r),
-                ),
-              ),
-              child: vm.isLoading
-                  ? const SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2.5,
+          AppButton(
+            text: 'PROCEED TO PAY',
+            backgroundColor: const Color(0xFF1D723B),
+            isLoading: vm.isLoading,
+            onTap: () async {
+              final order = await vm.initiateRazorpayOrder(
+                onError: (message) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(message),
+                        backgroundColor: const Color(0xFFE53935),
                       ),
-                    )
-                  : Text(
-                      'PROCEED TO PAY',
-                      style: TextStyle(
-                        fontSize: 15.sp,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-            ),
+                    );
+                  }
+                },
+              );
+              if (order != null && context.mounted) {
+                Navigator.pop(context);
+                if (onOrderCreated != null) {
+                  onOrderCreated!(order);
+                }
+              }
+            },
           ),
         ],
       ),

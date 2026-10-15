@@ -127,12 +127,13 @@ class CustomTextField extends StatelessWidget {
                   decoration: InputDecoration(
                       contentPadding: prefixWidget == null
                           ? contentPadding ??
-                              EdgeInsets.only(
+                              const EdgeInsets.only(
                                   left: 0, top: 12, right: 4, bottom: 16)
                           : contentPadding ??
-                              EdgeInsets.only(
+                              const EdgeInsets.only(
                                   left: 0, top: 12, right: 4, bottom: 4),
-                      //filled: true,
+                      filled: false,
+                      fillColor: Colors.transparent,
                       isDense: true,
                       suffixIcon: suffixWidget != null
                           //  suffixIconConstraints: BoxConstraints(minWidth: 15, minHeight: 19,maxWidth: 15, maxHeight: 19,),

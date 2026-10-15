@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:suchigo_user_app/widgets/custom_toast.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:suchigo_user_app/features/booking_confirmed/model/booking_confirmed_model.dart';
 import 'package:suchigo_user_app/features/booking_confirmed/view/booking_confirmed_screen.dart';
 import 'package:suchigo_user_app/features/map_location/model/map_location_model.dart';
+import '../model/schedule_pickup_model.dart';
 import '../repo/schedule_pickup_repo.dart';
 import '../view_model/schedule_pickup_view_model.dart';
 import 'widgets/additional_details_card.dart';
@@ -13,6 +15,7 @@ import 'widgets/jurisdiction_card.dart';
 import 'widgets/jurisdiction_selection_sheet.dart';
 import 'widgets/pickup_location_card.dart';
 import 'widgets/pickup_schedule_card.dart';
+import 'package:suchigo_user_app/widgets/app_button_widget.dart';
 
 class SchedulePickupScreen extends StatefulWidget {
   static const routeName = '/SchedulePickupScreen';
@@ -33,7 +36,9 @@ class _SchedulePickupScreenState extends State<SchedulePickupScreen> {
     _viewModel = SchedulePickupViewModel(repository: _repository);
   }
 
-  void _showLoadingToast(String message) {
+  bool _isFetchingSheetData = false;
+
+  void _showLoadingToast(String message, {bool isError = false}) {
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -48,7 +53,7 @@ class _SchedulePickupScreenState extends State<SchedulePickupScreen> {
         content: Container(
           padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
           decoration: BoxDecoration(
-            color: const Color(0xFF1E293B),
+            color: isError ? const Color(0xFFB91C1C) : const Color(0xFF1E293B),
             borderRadius: BorderRadius.circular(16.r),
             boxShadow: [
               BoxShadow(
@@ -60,22 +65,22 @@ class _SchedulePickupScreenState extends State<SchedulePickupScreen> {
           ),
           child: Row(
             children: [
-              Container(
-                width: 28.w,
-                height: 28.w,
-                decoration: const BoxDecoration(
-                  color: Color(0xFF1E40AF),
-                  shape: BoxShape.circle,
-                ),
-                child: const Center(
-                  child: Icon(
-                    Icons.info_rounded,
+              if (isError)
+                const Icon(
+                  Icons.error_outline_rounded,
+                  color: Colors.white,
+                  size: 20,
+                )
+              else
+                SizedBox(
+                  width: 18.w,
+                  height: 18.w,
+                  child: const CircularProgressIndicator(
+                    strokeWidth: 2.2,
                     color: Color(0xFF60A5FA),
-                    size: 18,
                   ),
                 ),
-              ),
-              SizedBox(width: 12.w),
+              SizedBox(width: 14.w),
               Expanded(
                 child: Text(
                   message,
@@ -89,42 +94,83 @@ class _SchedulePickupScreenState extends State<SchedulePickupScreen> {
             ],
           ),
         ),
-        duration: const Duration(seconds: 2),
+        duration: const Duration(seconds: 3),
       ),
     );
   }
 
-  void _openSelectionSheet({
+  Future<void> _fetchAndOpenSheet({
     required String title,
     required String searchHint,
-    required Future<List<String>> Function() loadItems,
+    required Future<List<JurisdictionOption>> Function() loadItems,
     required String selectedItem,
+    int? selectedId,
     bool isWard = false,
-    required ValueChanged<String> onSelect,
-  }) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return JurisdictionSelectionSheet(
-          title: title,
-          searchHint: searchHint,
-          loadItems: loadItems,
-          selectedItem: selectedItem,
-          isWard: isWard,
-          onSelect: onSelect,
-        );
-      },
-    );
+    required ValueChanged<JurisdictionOption> onSelect,
+    String? loadingMessage,
+  }) async {
+    if (_isFetchingSheetData) return;
+    _isFetchingSheetData = true;
+
+    _showLoadingToast(loadingMessage ?? 'Loading options. Please wait...');
+
+    try {
+      final items = await loadItems();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) {
+          return JurisdictionSelectionSheet(
+            title: title,
+            searchHint: searchHint,
+            initialItems: items,
+            loadItems: loadItems,
+            selectedItem: selectedItem,
+            selectedId: selectedId,
+            isWard: isWard,
+            onSelect: onSelect,
+          );
+        },
+      );
+    } catch (e) {
+      if (mounted) {
+        _showLoadingToast('Failed to load $title. Please try again.',
+            isError: true);
+      }
+    } finally {
+      _isFetchingSheetData = false;
+    }
+  }
+
+  DateTime _getNextAvailablePickupDate() {
+    DateTime date = DateTime.now().add(const Duration(days: 1));
+    while (date.weekday != DateTime.friday && date.weekday != DateTime.monday) {
+      date = date.add(const Duration(days: 1));
+    }
+    return date;
   }
 
   void _pickDate(BuildContext context) async {
+    final nextValidDate = _getNextAvailablePickupDate();
     final picked = await showDatePicker(
       context: context,
-      initialDate: DateTime.now().add(const Duration(days: 1)),
+      initialDate: _viewModel.pickupDate != null &&
+              (_viewModel.pickupDate!.weekday == DateTime.friday ||
+                  _viewModel.pickupDate!.weekday == DateTime.monday) &&
+              !_viewModel.pickupDate!.isBefore(DateTime.now().subtract(const Duration(days: 1)))
+          ? _viewModel.pickupDate!
+          : nextValidDate,
       firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 90)),
+      lastDate: DateTime.now().add(const Duration(days: 120)),
+      selectableDayPredicate: (DateTime val) {
+        // Pickup is available on Friday and Monday only
+        return val.weekday == DateTime.friday || val.weekday == DateTime.monday;
+      },
+      helpText: 'Select Pickup Date (Mondays & Fridays)',
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -151,72 +197,20 @@ class _SchedulePickupScreenState extends State<SchedulePickupScreen> {
         backgroundColor: const Color(0xFFF1F8F4),
         body: Consumer<SchedulePickupViewModel>(
           builder: (context, vm, child) {
-            return Column(
-              children: [
-                // Top Gradient Header Bar
-                _buildHeader(context),
+            return SingleChildScrollView(
+              child: Column(
+                children: [
+                  // Top Curved Gradient Header enclosing Action Bar & JurisdictionCard
+                  _buildTopCurvedHeader(context: context, vm: vm),
 
-                // Main Scrollable Form
-                Expanded(
-                  child: SingleChildScrollView(
+                  // Remaining Form Fields
+                  Padding(
                     padding: EdgeInsets.symmetric(
-                      horizontal: 18.w,
-                      vertical: 16.h,
+                      horizontal: 16.w,
+                      vertical: 14.h,
                     ),
                     child: Column(
                       children: [
-                        // 1. Jurisdiction & Waste Rate Card
-                        JurisdictionCard(
-                          jurisdiction: vm.jurisdiction,
-                          onSelectState: () {
-                            _openSelectionSheet(
-                              title: 'Select State',
-                              searchHint: 'Search State...',
-                              loadItems: () => _repository.getStates(),
-                              selectedItem: vm.jurisdiction.state,
-                              onSelect: (val) => vm.setState(val),
-                            );
-                          },
-                          onSelectDistrict: () {
-                            _openSelectionSheet(
-                              title: 'Select District',
-                              searchHint: 'Search District...',
-                              loadItems: () =>
-                                  _repository.getDistricts(vm.jurisdiction.state),
-                              selectedItem: vm.jurisdiction.district,
-                              onSelect: (val) {
-                                vm.setDistrict(val);
-                                _showLoadingToast(
-                                    'Loading local bodies. Please wait...');
-                              },
-                            );
-                          },
-                          onSelectLocalBody: () {
-                            _openSelectionSheet(
-                              title: 'Select Local Body',
-                              searchHint: 'Search Local Body...',
-                              loadItems: () => _repository
-                                  .getLocalBodies(vm.jurisdiction.district),
-                              selectedItem: vm.jurisdiction.localBody,
-                              onSelect: (val) => vm.setLocalBody(val),
-                            );
-                          },
-                          onSelectWard: () {
-                            _openSelectionSheet(
-                              title: 'Select Ward Name & Number',
-                              searchHint: 'Search Ward Name & Number...',
-                              isWard: true,
-                              loadItems: () =>
-                                  _repository.getWards(vm.jurisdiction.localBody),
-                              selectedItem: vm.jurisdiction.wardNameAndNumber,
-                              onSelect: (val) {
-                                vm.setWard(val);
-                                vm.setRatePerKg(5.0);
-                              },
-                            );
-                          },
-                        ),
-                        SizedBox(height: 18.h),
 
                         // 2. Contact Information Card
                         ContactInfoCard(
@@ -229,6 +223,7 @@ class _SchedulePickupScreenState extends State<SchedulePickupScreen> {
                         // 3. Pickup Location Card
                         PickupLocationCard(
                           addressController: vm.pickupAddressController,
+                          stateController: vm.stateController,
                           zipCodeController: vm.zipCodeController,
                           onSelectOnMap: () async {
                             final result = await Navigator.pushNamed(
@@ -238,6 +233,9 @@ class _SchedulePickupScreenState extends State<SchedulePickupScreen> {
                             if (result != null && result is SelectedAddressModel) {
                               vm.pickupAddressController.text =
                                   result.fullAddress;
+                              if (result.state.isNotEmpty) {
+                                vm.stateController.text = result.state;
+                              }
                               vm.zipCodeController.text = result.zipCode;
                             }
                           },
@@ -261,108 +259,112 @@ class _SchedulePickupScreenState extends State<SchedulePickupScreen> {
                         SizedBox(height: 24.h),
 
                         // Submit Button
-                        SizedBox(
-                          width: double.infinity,
+                        AppButton.gradient(
+                          text: 'SUBMIT',
                           height: 54.h,
-                          child: InkWell(
-                            onTap: vm.isLoading
-                                ? null
-                                : () async {
-                                    final success = await vm.submit();
-                                    if (success && context.mounted) {
-                                      final booking = BookingConfirmedModel(
-                                        bookingId: 'WC-115',
-                                        status: 'Confirmed',
-                                        wasteType: vm.bagsCountController.text
-                                                .trim()
-                                                .isNotEmpty
-                                            ? vm.bagsCountController.text.trim()
-                                            : '1',
-                                        collectionDate: vm.pickupDate != null
-                                            ? DateFormat('EEEE, d MMM yyyy')
-                                                .format(vm.pickupDate!)
-                                            : 'Friday, 2 Oct 2026',
-                                        estWeight: '2.5 kg',
-                                        contactName: vm
-                                                .fullNameController.text
-                                                .trim()
-                                                .isNotEmpty
-                                            ? vm.fullNameController.text.trim()
-                                            : 'aslam',
-                                        contactPhone: vm
-                                                .contactNumberController.text
-                                                .trim()
-                                                .isNotEmpty
-                                            ? '+91${vm.contactNumberController.text.trim()}'
-                                            : '+917592964952',
-                                        pickupAddress: vm
-                                                .pickupAddressController.text
-                                                .trim()
-                                                .isNotEmpty
-                                            ? '${vm.pickupAddressController.text.trim()}, ${vm.jurisdiction.district != "Not Selected" ? vm.jurisdiction.district : "Ernakulam"} - ${vm.zipCodeController.text.trim().isNotEmpty ? vm.zipCodeController.text.trim() : "682303"}'
-                                            : '9F, Kakkanad, Keralam, 682303,\nIndia,\nErnakulam – 682303',
-                                        co2Saved: '2.4 kg',
-                                        recycledPercent: '85%',
-                                        treesEquiv: '0.3',
-                                        standardRate: '₹10/kg',
-                                      );
-
-                                      Navigator.pushReplacementNamed(
-                                        context,
-                                        BookingConfirmedScreen.routeName,
-                                        arguments: booking,
-                                      );
-                                    }
-                                  },
-                            borderRadius: BorderRadius.circular(28.r),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  colors: [
-                                    Color(0xFF26A69A),
-                                    Color(0xFF00C853),
-                                    Color(0xFF00B0FF),
-                                  ],
-                                ),
-                                borderRadius: BorderRadius.circular(28.r),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: const Color(0xFF00C853)
-                                        .withValues(alpha: 0.3),
-                                    blurRadius: 12,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
-                              ),
-                              child: Center(
-                                child: vm.isLoading
-                                    ? const SizedBox(
-                                        width: 24,
-                                        height: 24,
-                                        child: CircularProgressIndicator(
-                                          color: Colors.white,
-                                          strokeWidth: 2.5,
-                                        ),
-                                      )
-                                    : Text(
-                                        'SUBMIT',
-                                        style: TextStyle(
-                                          fontSize: 16.sp,
-                                          fontWeight: FontWeight.w800,
-                                          color: Colors.white,
-                                          letterSpacing: 1.0,
-                                        ),
-                                      ),
-                              ),
-                            ),
+                          borderRadius: 28.r,
+                          isLoading: vm.isLoading,
+                          gradient: const LinearGradient(
+                            colors: [
+                              Color(0xFF26A69A),
+                              Color(0xFF00C853),
+                              Color(0xFF00B0FF),
+                            ],
                           ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF00C853)
+                                  .withValues(alpha: 0.3),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                          textStyle: TextStyle(
+                            fontSize: 16.sp,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                            letterSpacing: 1.0,
+                          ),
+                          onTap: () async {
+                            final success = await vm.submit(
+                              onError: (error) {
+                                CustomToast.show(
+                                  context,
+                                  message: error,
+                                );
+                              },
+                            );
+                            if (success && context.mounted) {
+                              final pickup = vm.createdPickup;
+                              final booking = BookingConfirmedModel(
+                                bookingId: pickup != null
+                                    ? 'WC-${pickup.id}'
+                                    : 'WC-115',
+                                status: pickup?.status.isNotEmpty == true
+                                    ? (pickup!.status[0].toUpperCase() +
+                                        pickup.status.substring(1))
+                                    : 'Confirmed',
+                                wasteType: pickup?.wasteTypeName.isNotEmpty ==
+                                        true
+                                    ? pickup!.wasteTypeName
+                                    : (vm.bagsCountController.text
+                                            .trim()
+                                            .isNotEmpty
+                                        ? vm.bagsCountController.text.trim()
+                                        : '1'),
+                                collectionDate: vm.pickupDate != null
+                                    ? DateFormat('EEEE, d MMM yyyy')
+                                        .format(vm.pickupDate!)
+                                    : (pickup?.pickupDate.isNotEmpty == true
+                                        ? pickup!.pickupDate
+                                        : 'Friday, 2 Oct 2026'),
+                                estWeight:
+                                    '${(int.tryParse(vm.bagsCountController.text) ?? 1) * 2.5} kg',
+                                contactName: pickup?.fullName.isNotEmpty == true
+                                    ? pickup!.fullName
+                                    : (vm.fullNameController.text
+                                            .trim()
+                                            .isNotEmpty
+                                        ? vm.fullNameController.text.trim()
+                                        : 'Shilpa New'),
+                                contactPhone: pickup
+                                            ?.contactNumber.isNotEmpty ==
+                                        true
+                                    ? pickup!.contactNumber
+                                    : (vm.contactNumberController.text
+                                            .trim()
+                                            .isNotEmpty
+                                        ? vm.contactNumberController.text.trim()
+                                        : '+917306929058'),
+                                pickupAddress: pickup != null
+                                    ? '${pickup.street},\n${pickup.district} – ${pickup.zipCode}'
+                                    : (vm.pickupAddressController.text
+                                            .trim()
+                                            .isNotEmpty
+                                        ? '${vm.pickupAddressController.text.trim()}, ${vm.jurisdiction.district != "Not Selected" ? vm.jurisdiction.district : "Ernakulam"} - ${vm.zipCodeController.text.trim().isNotEmpty ? vm.zipCodeController.text.trim() : "682303"}'
+                                        : '9F, Kakkanad, Keralam, 682303,\nIndia,\nErnakulam – 682303'),
+                                co2Saved: '2.4 kg',
+                                recycledPercent: '85%',
+                                treesEquiv: '0.3',
+                                standardRate: vm.jurisdiction.ratePerKg != null
+                                    ? '₹${vm.jurisdiction.ratePerKg!.toStringAsFixed(2)}/kg'
+                                    : '₹40.00/kg',
+                              );
+
+                              Navigator.pushReplacementNamed(
+                                context,
+                                BookingConfirmedScreen.routeName,
+                                arguments: booking,
+                              );
+                            }
+                          },
                         ),
                         SizedBox(height: 28.h),
                       ],
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             );
           },
         ),
@@ -370,80 +372,215 @@ class _SchedulePickupScreenState extends State<SchedulePickupScreen> {
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildTopCurvedHeader({
+    required BuildContext context,
+    required SchedulePickupViewModel vm,
+  }) {
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 18.h),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
           colors: [
-            Color(0xFF00BFA5),
             Color(0xFF00C853),
-            Color(0xFF26A69A),
+            Color(0xFF00BFA5),
+            Color(0xFF00B0FF),
           ],
         ),
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(32.r),
+          bottomRight: Radius.circular(32.r),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF00C853).withValues(alpha: 0.22),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: SafeArea(
         bottom: false,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            // Left Back Circle Button
-            InkWell(
-              onTap: () => Navigator.pop(context),
-              borderRadius: BorderRadius.circular(20.r),
-              child: Container(
-                width: 40.w,
-                height: 40.w,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.22),
-                  shape: BoxShape.circle,
-                ),
-                child: const Center(
-                  child: Icon(
-                    Icons.arrow_back_ios_new_rounded,
-                    color: Colors.white,
-                    size: 18,
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(16.w, 10.h, 16.w, 20.h),
+          child: Column(
+            children: [
+              // Top Action Row
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  InkWell(
+                    onTap: () => Navigator.pop(context),
+                    borderRadius: BorderRadius.circular(20.r),
+                    child: Container(
+                      width: 40.w,
+                      height: 40.w,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.22),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Center(
+                        child: Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          color: Colors.white,
+                          size: 18,
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-              ),
-            ),
-
-            // Title
-            Text(
-              'Schedule Pickup',
-              style: TextStyle(
-                fontSize: 20.sp,
-                fontWeight: FontWeight.w800,
-                color: Colors.white,
-              ),
-            ),
-
-            // Right Home Circle Button
-            InkWell(
-              onTap: () {
-                Navigator.popUntil(context, (route) => route.isFirst);
-              },
-              borderRadius: BorderRadius.circular(20.r),
-              child: Container(
-                width: 40.w,
-                height: 40.w,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.22),
-                  shape: BoxShape.circle,
-                ),
-                child: const Center(
-                  child: Icon(
-                    Icons.home_rounded,
-                    color: Colors.white,
-                    size: 20,
+                  Text(
+                    'Schedule Pickup',
+                    style: TextStyle(
+                      fontSize: 20.sp,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
                   ),
-                ),
+                  InkWell(
+                    onTap: () {
+                      Navigator.popUntil(context, (route) => route.isFirst);
+                    },
+                    borderRadius: BorderRadius.circular(20.r),
+                    child: Container(
+                      width: 40.w,
+                      height: 40.w,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.22),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Center(
+                        child: Icon(
+                          Icons.home_rounded,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ],
+              SizedBox(height: 18.h),
+
+              // 1. Jurisdiction & Waste Rate Card nested inside curved gradient
+              JurisdictionCard(
+                jurisdiction: vm.jurisdiction,
+                onSelectDistrict: () {
+                  _fetchAndOpenSheet(
+                    title: 'Select District',
+                    searchHint: 'Search District...',
+                    loadingMessage: 'Loading districts. Please wait...',
+                    loadItems: () async {
+                      final list = await _repository.getDistrictsList(
+                        state: vm.jurisdiction.state.isNotEmpty
+                            ? vm.jurisdiction.state
+                            : 'Kerala',
+                      );
+                      return list
+                          .map((d) => JurisdictionOption(
+                                id: d.id,
+                                title: d.name,
+                                data: d,
+                              ))
+                          .toList();
+                    },
+                    selectedItem: vm.jurisdiction.district,
+                    selectedId: vm.jurisdiction.districtId,
+                    onSelect: (option) {
+                      vm.setDistrict(option.title, districtId: option.id);
+                    },
+                  );
+                },
+                onSelectLocalBody: () {
+                  if (vm.jurisdiction.district == 'Not Selected') {
+                    _showLoadingToast('Please select a district first');
+                    return;
+                  }
+                  _fetchAndOpenSheet(
+                    title: 'Select Local Body',
+                    searchHint: 'Search Local Body...',
+                    loadingMessage:
+                        'Loading local bodies for ${vm.jurisdiction.district}. Please wait...',
+                    loadItems: () async {
+                      final list = await _repository.getLocalBodiesList(
+                        districtId: vm.jurisdiction.districtId,
+                        district: vm.jurisdiction.district,
+                      );
+                      final rates = await _repository.getDisposalRates();
+                      return list.map((lb) {
+                        double? rate;
+                        try {
+                          final match = rates.firstWhere(
+                            (r) => r.localBodyId == lb.id,
+                          );
+                          rate = match.ratePerKg;
+                        } catch (_) {}
+                        final displayRate = rate != null
+                            ? '₹${rate.toStringAsFixed(2)} / kg'
+                            : '₹40.00 / kg';
+                        return JurisdictionOption(
+                          id: lb.id,
+                          title: lb.name,
+                          subtitle: 'Rate: $displayRate',
+                          data: lb,
+                        );
+                      }).toList();
+                    },
+                    selectedItem: vm.jurisdiction.localBody,
+                    selectedId: vm.jurisdiction.localBodyId,
+                    onSelect: (option) {
+                      vm.setLocalBody(option.title, localBodyId: option.id);
+                    },
+                  );
+                },
+                onSelectWard: () {
+                  if (vm.jurisdiction.localBody == 'Not Selected') {
+                    _showLoadingToast('Please select a local body first');
+                    return;
+                  }
+                  _fetchAndOpenSheet(
+                    title: 'Select Ward Name & Number',
+                    searchHint: 'Search Ward Name & Number...',
+                    loadingMessage:
+                        'Loading wards for ${vm.jurisdiction.localBody}. Please wait...',
+                    isWard: true,
+                    loadItems: () async {
+                      final list = await _repository.getWardsList(
+                        localBodyId: vm.jurisdiction.localBodyId,
+                        localBody: vm.jurisdiction.localBody,
+                      );
+                      return list
+                          .map((w) => JurisdictionOption(
+                                id: w.id,
+                                title: w.displayName,
+                                subtitle: w.wardNumber > 0
+                                    ? 'Ward #${w.wardNumber}'
+                                    : null,
+                                data: w,
+                              ))
+                          .toList();
+                    },
+                    selectedItem: vm.jurisdiction.wardNameAndNumber,
+                    selectedId: vm.jurisdiction.wardId,
+                    onSelect: (option) {
+                      final ward = option.data is WardModel
+                          ? option.data as WardModel
+                          : null;
+                      vm.setWard(
+                        option.title,
+                        wardId: option.id,
+                        wardNumber: ward?.wardNumber,
+                      );
+                      if (vm.jurisdiction.localBodyId != null) {
+                        vm.fetchAndApplyDisposalRate(
+                            vm.jurisdiction.localBodyId!);
+                      }
+                    },
+                  );
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );

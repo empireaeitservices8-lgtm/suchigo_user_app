@@ -31,8 +31,39 @@ class SpHelper {
     return await sp.setString(key, value);
   }
 
-  static Future<bool?> clearAll() async {
-    return await _sp?.clear();
+  static Future<bool> remove(String key, {bool secure = false}) async {
+    if (secure) {
+      await _secureInstance().delete(key: key);
+      return true;
+    }
+    final sp = await getSP();
+    return await sp.remove(key);
+  }
+
+  static Future<bool> clearAuthSession() async {
+    final sp = await getSP();
+    try {
+      await _secureInstance().deleteAll();
+    } catch (_) {}
+    await sp.remove('KEY_TOKEN');
+    await sp.remove('KEY_USER_ID');
+    await sp.remove('KEY_USER_NAME');
+    await sp.remove('KEY_EMAIL');
+    await sp.remove('KEY_USER_MOBILE');
+    await sp.remove('KEY_ROLE_ID');
+    await sp.remove('KEY_ROLE');
+    await sp.remove('KEY_TENANT_CODE');
+    await sp.remove('KEY_ONBOARDING_COMPLETED');
+    await sp.remove('local_auth_status');
+    return true;
+  }
+
+  static Future<bool> clearAll() async {
+    final sp = await getSP();
+    try {
+      await _secureInstance().deleteAll();
+    } catch (_) {}
+    return await sp.clear();
   }
 
   ///

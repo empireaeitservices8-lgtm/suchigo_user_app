@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import '../../model/auth_model.dart';
 import '../../view_model/auth_view_model.dart';
+import 'package:suchigo_user_app/widgets/app_button_widget.dart';
 import '../complete_profile_screen.dart';
 
 class OTPVerificationSheet extends StatelessWidget {
@@ -85,7 +86,7 @@ class OTPVerificationSheet extends StatelessWidget {
                 width: 58.w,
                 height: 58.w,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFAFCFA),
+                  color: Colors.white,
                   borderRadius: BorderRadius.circular(16.r),
                   border: Border.all(
                     color: isFocused || hasValue
@@ -108,8 +109,12 @@ class OTPVerificationSheet extends StatelessWidget {
                       color: const Color(0xFF0F4A26),
                     ),
                     decoration: const InputDecoration(
+                      filled: false,
+                      fillColor: Colors.transparent,
                       counterText: '',
                       border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
                       contentPadding: EdgeInsets.zero,
                     ),
                     onChanged: (val) {
@@ -161,66 +166,56 @@ class OTPVerificationSheet extends StatelessWidget {
           SizedBox(height: 28.h),
 
           // Verify & Continue Button
-          SizedBox(
-            width: double.infinity,
-            height: 52.h,
-            child: ElevatedButton(
-              onPressed: vm.isOtpComplete && !vm.isLoading
-                  ? () async {
-                      final success = await vm.verifyOTP();
-                      if (!context.mounted) return;
-                      if (success) {
-                        Navigator.pop(context);
-                        onVerificationSuccess();
-                      } else if (vm.isNotRegistered) {
-                        Navigator.pop(context);
-                        vm.setMode(AuthMode.register);
-                        Navigator.pushNamed(
-                          context,
-                          CompleteProfileScreen.routeName,
-                          arguments: CompleteProfileScreenArgs(
-                            phoneNumber: vm.phoneNumber,
-                            otp: vm.otpCode,
-                          ),
-                        );
-                      } else if (vm.errorMessage != null) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(vm.errorMessage!),
-                          ),
-                        );
-                      }
-                    }
-                  : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: vm.isOtpComplete
-                    ? const Color(0xFF166534)
-                    : const Color(0xFFE2E8F0),
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16.r),
-                ),
-              ),
-              child: vm.isLoading
-                  ? const SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2.5,
-                      ),
-                    )
-                  : Text(
-                      'Verify & Continue',
-                      style: TextStyle(
-                        fontSize: 16.sp,
-                        fontWeight: FontWeight.w700,
-                        color: vm.isOtpComplete
-                            ? Colors.white
-                            : const Color(0xFF94A3B8),
-                      ),
+          AppButton(
+            text: 'Verify & Continue',
+            isEnabled: vm.isOtpComplete,
+            isLoading: vm.isLoading,
+            onTap: () async {
+              final success = await vm.verifyOTP();
+              if (!context.mounted) return;
+              if (success) {
+                Navigator.pop(context);
+                if (vm.mode == AuthMode.register) {
+                  Navigator.pushNamed(
+                    context,
+                    CompleteProfileScreen.routeName,
+                    arguments: CompleteProfileScreenArgs(
+                      phoneNumber: vm.fullPhoneNumber,
+                      otp: vm.otpCode,
                     ),
-            ),
+                  );
+                } else {
+                  onVerificationSuccess();
+                }
+              } else if (vm.isNotRegistered) {
+                vm.setMode(AuthMode.register);
+                final verifySuccess = await vm.verifyOTP();
+                if (!context.mounted) return;
+                if (verifySuccess) {
+                  Navigator.pop(context);
+                  Navigator.pushNamed(
+                    context,
+                    CompleteProfileScreen.routeName,
+                    arguments: CompleteProfileScreenArgs(
+                      phoneNumber: vm.fullPhoneNumber,
+                      otp: vm.otpCode,
+                    ),
+                  );
+                } else if (vm.errorMessage != null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(vm.errorMessage!),
+                    ),
+                  );
+                }
+              } else if (vm.errorMessage != null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(vm.errorMessage!),
+                  ),
+                );
+              }
+            },
           ),
         ],
       ),

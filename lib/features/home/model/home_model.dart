@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:suchigo_user_app/features/profile/model/profile_model.dart';
 
 class WasteCategoryModel {
   final String id;
@@ -20,6 +21,7 @@ class WasteCategoryModel {
 
 class HomeDashboardModel {
   final String userName;
+  final ProfileResponseModel? profile;
   final double userProgress;
   final int treesSaved;
   final int rewardPoints;
@@ -28,6 +30,7 @@ class HomeDashboardModel {
 
   const HomeDashboardModel({
     this.userName = 'USER',
+    this.profile,
     this.userProgress = 0.65,
     this.treesSaved = 11235,
     this.rewardPoints = 300,

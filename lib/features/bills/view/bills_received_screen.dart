@@ -51,17 +51,36 @@ class _BillsReceivedScreenState extends State<BillsReceivedScreen> {
 
                         // Bills List / Empty State
                         Expanded(
-                          child: vm.filteredBills.isEmpty
-                              ? _buildEmptyState()
-                              : ListView.separated(
-                                  itemCount: vm.filteredBills.length,
-                                  separatorBuilder: (ctx, i) =>
-                                      SizedBox(height: 12.h),
-                                  itemBuilder: (ctx, index) {
-                                    return _buildBillItem(
-                                      vm.filteredBills[index],
-                                    );
-                                  },
+                          child: vm.isLoading
+                              ? const Center(
+                                  child: CircularProgressIndicator(
+                                    color: Color(0xFF166534),
+                                  ),
+                                )
+                              : RefreshIndicator(
+                                  color: const Color(0xFF166534),
+                                  onRefresh: () => vm.loadBills(),
+                                  child: vm.filteredBills.isEmpty
+                                      ? SingleChildScrollView(
+                                          physics:
+                                              const AlwaysScrollableScrollPhysics(),
+                                          child: SizedBox(
+                                            height: 320.h,
+                                            child: _buildEmptyState(),
+                                          ),
+                                        )
+                                      : ListView.separated(
+                                          physics:
+                                              const AlwaysScrollableScrollPhysics(),
+                                          itemCount: vm.filteredBills.length,
+                                          separatorBuilder: (ctx, i) =>
+                                              SizedBox(height: 12.h),
+                                          itemBuilder: (ctx, index) {
+                                            return _buildBillItem(
+                                              vm.filteredBills[index],
+                                            );
+                                          },
+                                        ),
                                 ),
                         ),
                       ],
@@ -355,6 +374,8 @@ class _BillsReceivedScreenState extends State<BillsReceivedScreen> {
   }
 
   Widget _buildBillItem(BillModel bill) {
+    final isPaid = bill.status == BillStatus.paid;
+
     return Container(
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
@@ -368,38 +389,181 @@ class _BillsReceivedScreenState extends State<BillsReceivedScreen> {
           ),
         ],
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Column(
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                bill.invoiceNumber,
-                style: TextStyle(
-                  fontSize: 15.sp,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF1E293B),
+              Expanded(
+                child: Row(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(8.w),
+                      decoration: BoxDecoration(
+                        color: isPaid
+                            ? const Color(0xFFE8F5E9)
+                            : const Color(0xFFFFF7ED),
+                        borderRadius: BorderRadius.circular(10.r),
+                      ),
+                      child: Icon(
+                        Icons.receipt_rounded,
+                        color: isPaid
+                            ? const Color(0xFF166534)
+                            : const Color(0xFFD97706),
+                        size: 20.sp,
+                      ),
+                    ),
+                    SizedBox(width: 10.w),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            bill.invoiceNumber,
+                            style: TextStyle(
+                              fontSize: 15.sp,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF1E293B),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          if (bill.description.isNotEmpty) ...[
+                            SizedBox(height: 2.h),
+                            Text(
+                              bill.description,
+                              style: TextStyle(
+                                fontSize: 12.sp,
+                                fontWeight: FontWeight.w500,
+                                color: const Color(0xFF64748B),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              SizedBox(height: 4.h),
+              SizedBox(width: 8.w),
+              Text(
+                '₹${bill.amount.toStringAsFixed(2)}',
+                style: TextStyle(
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.w800,
+                  color: isPaid
+                      ? const Color(0xFF166534)
+                      : const Color(0xFFDC2626),
+                ),
+              ),
+            ],
+          ),
+          if (bill.weight > 0 ||
+              bill.rate > 0 ||
+              bill.paymentMethod.isNotEmpty) ...[
+            SizedBox(height: 10.h),
+            Wrap(
+              spacing: 6.w,
+              runSpacing: 6.h,
+              children: [
+                if (bill.weight > 0)
+                  _buildMetaTag(
+                    icon: Icons.scale_rounded,
+                    label: '${bill.weight} kg',
+                  ),
+                if (bill.rate > 0)
+                  _buildMetaTag(
+                    icon: Icons.currency_rupee_rounded,
+                    label: '₹${bill.rate}/kg',
+                  ),
+                if (bill.paymentMethod.isNotEmpty)
+                  _buildMetaTag(
+                    icon: Icons.payment_rounded,
+                    label: bill.paymentMethod.toUpperCase(),
+                  ),
+              ],
+            ),
+          ],
+          if (bill.remarks.isNotEmpty) ...[
+            SizedBox(height: 6.h),
+            Text(
+              'Remarks: ${bill.remarks}',
+              style: TextStyle(
+                fontSize: 11.5.sp,
+                fontStyle: FontStyle.italic,
+                color: const Color(0xFF64748B),
+              ),
+            ),
+          ],
+          SizedBox(height: 12.h),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
               Text(
                 bill.dateString,
                 style: TextStyle(
                   fontSize: 12.sp,
                   color: const Color(0xFF94A3B8),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: 10.w,
+                  vertical: 4.h,
+                ),
+                decoration: BoxDecoration(
+                  color: isPaid
+                      ? const Color(0xFFE8F5E9)
+                      : const Color(0xFFFEE2E2),
+                  borderRadius: BorderRadius.circular(20.r),
+                ),
+                child: Text(
+                  isPaid ? 'PAID' : 'PENDING',
+                  style: TextStyle(
+                    fontSize: 11.sp,
+                    fontWeight: FontWeight.w700,
+                    color: isPaid
+                        ? const Color(0xFF166534)
+                        : const Color(0xFFDC2626),
+                    letterSpacing: 0.3,
+                  ),
                 ),
               ),
             ],
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMetaTag({
+    required IconData icon,
+    required String label,
+  }) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F5F9),
+        borderRadius: BorderRadius.circular(6.r),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            size: 12.sp,
+            color: const Color(0xFF64748B),
+          ),
+          SizedBox(width: 4.w),
           Text(
-            '₹${bill.amount.toStringAsFixed(2)}',
+            label,
             style: TextStyle(
-              fontSize: 16.sp,
-              fontWeight: FontWeight.w800,
-              color: bill.status == BillStatus.paid
-                  ? const Color(0xFF1D723B)
-                  : const Color(0xFFE53935),
+              fontSize: 11.sp,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF475569),
             ),
           ),
         ],

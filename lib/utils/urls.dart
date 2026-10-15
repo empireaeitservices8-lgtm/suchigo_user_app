@@ -4,8 +4,21 @@ String urlBase = UrlHelpers.baseURL;
 
 //Auth
 String urlSendOTP = "${urlBase}otp/send/";
+String urlVerifyOTP = "${urlBase}otp/verify/";
 String urlRegister = "${urlBase}register/";
 String urlLogin = "${urlBase}login/";
+String urlProfile = "${urlBase}profile/";
+String urlBills = "${urlBase}bill-history-from-collector/";
+String urlBillHistoryFromCollector = "${urlBase}bill-history-from-collector/";
+String urlPickups = "${urlBase}pickups/";
+String urlRazorpayAddToWallet = "${urlBase}razorpay/add-to-wallet/";
+String urlSubWasteTypes = "${urlBase}sub-waste-types/";
+String urlStates = "${urlBase}states/";
+String urlDistricts = "https://suchigo.pythonanywhere.com/api/districts/";
+String urlLocalBodies = "https://suchigo.pythonanywhere.com/api/localbodies/";
+String urlWards = "https://suchigo.pythonanywhere.com/api/wards/";
+String urlDisposalRates = "https://suchigo.pythonanywhere.com/api/disposal-rates/";
+String urlPickupVehicleTracking = "${urlBase}pickup-vehicle-tracking/";
 
 //Register
 String urlRegistrationRequestOTP = "${urlBase}register/request-otp";

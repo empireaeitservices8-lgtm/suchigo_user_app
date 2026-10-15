@@ -16,79 +16,84 @@ class WasteTypeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(20.r),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 18.h),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20.r),
-          border: Border.all(
-            color: isSelected
-                ? const Color(0xFF166534)
-                : const Color(0xFFE2E8F0),
-            width: isSelected ? 2.0 : 1.0,
-          ),
-          boxShadow: [
-            BoxShadow(
+    final isEnabled = model.isEnabled;
+
+    return Opacity(
+      opacity: isEnabled ? 1.0 : 0.55,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20.r),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 14.h),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20.r),
+            border: Border.all(
               color: isSelected
-                  ? const Color(0xFF166534).withValues(alpha: 0.12)
-                  : Colors.black.withValues(alpha: 0.03),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+                  ? const Color(0xFF166534)
+                  : const Color(0xFFE2E8F0),
+              width: isSelected ? 2.0 : 1.0,
             ),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // Icon in soft mint circle
-            Container(
-              width: 52.w,
-              height: 52.w,
-              decoration: BoxDecoration(
-                color: const Color(0xFFE8F6EF),
-                shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: isSelected
+                    ? const Color(0xFF166534).withValues(alpha: 0.12)
+                    : Colors.black.withValues(alpha: 0.03),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
               ),
-              child: Center(
-                child: Icon(
-                  model.icon,
-                  color: const Color(0xFF166534),
-                  size: 26.sp,
+            ],
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Icon in soft mint circle
+              Container(
+                width: 48.w,
+                height: 48.w,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFE8F6EF),
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Icon(
+                    model.icon,
+                    color: const Color(0xFF166534),
+                    size: 24.sp,
+                  ),
                 ),
               ),
-            ),
-            SizedBox(height: 12.h),
+              SizedBox(height: 10.h),
 
-            // Title
-            Text(
-              model.title,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 13.sp,
-                fontWeight: FontWeight.w800,
-                color: const Color(0xFF1E293B),
-                letterSpacing: 0.3,
+              // Title
+              Text(
+                model.title,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 12.sp,
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFF1E293B),
+                  letterSpacing: 0.3,
+                ),
               ),
-            ),
-            SizedBox(height: 6.h),
+              SizedBox(height: 5.h),
 
-            // Description
-            Text(
-              model.description,
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              style: TextStyle(
-                fontSize: 11.sp,
-                fontWeight: FontWeight.w400,
-                color: const Color(0xFF94A3B8),
-                height: 1.25,
+              // Description
+              Text(
+                model.description,
+                textAlign: TextAlign.center,
+                maxLines: 3,
+                style: TextStyle(
+                  fontSize: 10.sp,
+                  fontWeight: FontWeight.w400,
+                  color: const Color(0xFF94A3B8),
+                  height: 1.25,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

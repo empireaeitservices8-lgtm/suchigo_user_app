@@ -3,12 +3,14 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class PickupLocationCard extends StatelessWidget {
   final TextEditingController addressController;
+  final TextEditingController stateController;
   final TextEditingController zipCodeController;
   final VoidCallback onSelectOnMap;
 
   const PickupLocationCard({
     super.key,
     required this.addressController,
+    required this.stateController,
     required this.zipCodeController,
     required this.onSelectOnMap,
   });
@@ -96,7 +98,7 @@ class PickupLocationCard extends StatelessWidget {
           Container(
             height: 90.h,
             decoration: BoxDecoration(
-              color: const Color(0xFFFAFCFA),
+              color: Colors.white,
               borderRadius: BorderRadius.circular(14.r),
               border: Border.all(
                 color: const Color(0xFFE2E8F0),
@@ -119,8 +121,59 @@ class PickupLocationCard extends StatelessWidget {
                   fontWeight: FontWeight.w400,
                   color: const Color(0xFFB0BEC5),
                 ),
+                filled: false,
+                fillColor: Colors.transparent,
                 contentPadding: EdgeInsets.all(14.w),
                 border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+              ),
+            ),
+          ),
+          SizedBox(height: 16.h),
+
+          // State Field (Non-editable)
+          _buildFieldLabel('State', isRequired: true),
+          SizedBox(height: 6.h),
+          Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFFF1F5F9),
+              borderRadius: BorderRadius.circular(14.r),
+              border: Border.all(
+                color: const Color(0xFFE2E8F0),
+                width: 1.0,
+              ),
+            ),
+            child: TextField(
+              controller: stateController,
+              readOnly: true,
+              enabled: false,
+              style: TextStyle(
+                fontSize: 14.sp,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF475569),
+              ),
+              decoration: InputDecoration(
+                hintText: 'Kerala',
+                hintStyle: TextStyle(
+                  fontSize: 13.5.sp,
+                  fontWeight: FontWeight.w500,
+                  color: const Color(0xFF475569),
+                ),
+                prefixIcon: const Icon(
+                  Icons.lock_outline_rounded,
+                  size: 18,
+                  color: Color(0xFF94A3B8),
+                ),
+                filled: false,
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 16.w,
+                  vertical: 14.h,
+                ),
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                disabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
               ),
             ),
           ),
@@ -131,7 +184,7 @@ class PickupLocationCard extends StatelessWidget {
           SizedBox(height: 6.h),
           Container(
             decoration: BoxDecoration(
-              color: const Color(0xFFFAFCFA),
+              color: Colors.white,
               borderRadius: BorderRadius.circular(14.r),
               border: Border.all(
                 color: const Color(0xFFE2E8F0),
@@ -153,11 +206,15 @@ class PickupLocationCard extends StatelessWidget {
                   fontWeight: FontWeight.w400,
                   color: const Color(0xFFB0BEC5),
                 ),
+                filled: false,
+                fillColor: Colors.transparent,
                 contentPadding: EdgeInsets.symmetric(
                   horizontal: 16.w,
                   vertical: 14.h,
                 ),
                 border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
               ),
             ),
           ),

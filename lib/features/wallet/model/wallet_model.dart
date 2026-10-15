@@ -11,6 +11,7 @@ class WalletTransactionModel {
   final double amount;
   final TransactionType type;
   final bool isWelcomeIncentive;
+  final String paymentMethod;
 
   const WalletTransactionModel({
     required this.id,
@@ -19,6 +20,7 @@ class WalletTransactionModel {
     required this.amount,
     required this.type,
     this.isWelcomeIncentive = false,
+    this.paymentMethod = '',
   });
 
   String get formattedAmount {
@@ -41,3 +43,27 @@ class WalletDataModel {
     this.transactions = const [],
   });
 }
+
+class RazorpayOrderModel {
+  final String orderId;
+  final int amount;
+  final String currency;
+  final String keyId;
+
+  const RazorpayOrderModel({
+    required this.orderId,
+    required this.amount,
+    required this.currency,
+    required this.keyId,
+  });
+
+  factory RazorpayOrderModel.fromJson(Map<dynamic, dynamic> json) {
+    return RazorpayOrderModel(
+      orderId: json['order_id']?.toString() ?? '',
+      amount: int.tryParse(json['amount']?.toString() ?? '') ?? 0,
+      currency: json['currency']?.toString() ?? 'INR',
+      keyId: json['key_id']?.toString() ?? '',
+    );
+  }
+}
+

@@ -7,6 +7,7 @@ class BillViewModel extends ViewModel {
 
   BillsSummaryModel _summary = const BillsSummaryModel();
   BillStatus _selectedFilter = BillStatus.all;
+  String? _errorMessage;
 
   BillViewModel({BillRepository? repository})
       : _repository = repository ?? BillRepositoryImpl() {
@@ -15,6 +16,7 @@ class BillViewModel extends ViewModel {
 
   BillsSummaryModel get summary => _summary;
   BillStatus get selectedFilter => _selectedFilter;
+  String? get errorMessage => _errorMessage;
 
   List<BillModel> get filteredBills {
     if (_selectedFilter == BillStatus.all) {
@@ -30,12 +32,20 @@ class BillViewModel extends ViewModel {
     }
   }
 
-  void loadBills() async {
+  Future<void> loadBills() async {
     isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
     try {
-      _summary = await _repository.getBillsSummary();
+      _summary = await _repository.getBillsSummary(
+        onError: (error) {
+          _errorMessage = error.message;
+        },
+      );
     } catch (e) {
       _summary = const BillsSummaryModel();
+      _errorMessage ??= 'Failed to load bills';
     } finally {
       isLoading = false;
       notifyListeners();

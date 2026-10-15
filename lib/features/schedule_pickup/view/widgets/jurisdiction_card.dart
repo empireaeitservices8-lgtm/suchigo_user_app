@@ -4,7 +4,6 @@ import '../../model/schedule_pickup_model.dart';
 
 class JurisdictionCard extends StatelessWidget {
   final JurisdictionModel jurisdiction;
-  final VoidCallback onSelectState;
   final VoidCallback onSelectDistrict;
   final VoidCallback onSelectLocalBody;
   final VoidCallback onSelectWard;
@@ -12,7 +11,6 @@ class JurisdictionCard extends StatelessWidget {
   const JurisdictionCard({
     super.key,
     required this.jurisdiction,
-    required this.onSelectState,
     required this.onSelectDistrict,
     required this.onSelectLocalBody,
     required this.onSelectWard,
@@ -37,37 +35,6 @@ class JurisdictionCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
-          Row(
-            children: [
-              const Icon(
-                Icons.location_on_rounded,
-                color: Color(0xFF166534),
-                size: 20,
-              ),
-              SizedBox(width: 8.w),
-              Text(
-                'Jurisdiction & Waste Rate',
-                style: TextStyle(
-                  fontSize: 16.sp,
-                  fontWeight: FontWeight.w800,
-                  color: const Color(0xFF1E293B),
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 18.h),
-
-          // State Field
-          _buildDropdownRow(
-            icon: Icons.map_outlined,
-            label: 'State',
-            value: jurisdiction.state,
-            isSelected: jurisdiction.state != 'Not Selected',
-            onTap: onSelectState,
-          ),
-          _buildDivider(),
-
           // District Field
           _buildDropdownRow(
             icon: Icons.landscape_outlined,
@@ -83,6 +50,11 @@ class JurisdictionCard extends StatelessWidget {
             icon: Icons.location_city_outlined,
             label: 'Local Body',
             value: jurisdiction.localBody,
+            badge: jurisdiction.localBody != 'Not Selected'
+                ? (jurisdiction.ratePerKg != null
+                    ? '₹${jurisdiction.ratePerKg!.toStringAsFixed(0)}/kg'
+                    : '₹40/kg')
+                : null,
             isSelected: jurisdiction.localBody != 'Not Selected',
             onTap: onSelectLocalBody,
           ),
@@ -117,19 +89,27 @@ class JurisdictionCard extends StatelessWidget {
               ),
               const Spacer(),
               Container(
-                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 6.h),
+                padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 6.h),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF1F5F9),
+                  color: (jurisdiction.ratePerKg != null ||
+                          jurisdiction.localBody != 'Not Selected')
+                      ? const Color(0xFFE8F5E9)
+                      : const Color(0xFFF1F5F9),
                   borderRadius: BorderRadius.circular(10.r),
                 ),
                 child: Text(
                   jurisdiction.ratePerKg != null
-                      ? '₹${jurisdiction.ratePerKg!.toStringAsFixed(2)}'
-                      : '--',
+                      ? '₹${jurisdiction.ratePerKg!.toStringAsFixed(2)} / kg'
+                      : (jurisdiction.localBody != 'Not Selected'
+                          ? '₹40.00 / kg'
+                          : '--'),
                   style: TextStyle(
                     fontSize: 14.sp,
-                    fontWeight: FontWeight.w700,
-                    color: const Color(0xFF64748B),
+                    fontWeight: FontWeight.w800,
+                    color: (jurisdiction.ratePerKg != null ||
+                            jurisdiction.localBody != 'Not Selected')
+                        ? const Color(0xFF166534)
+                        : const Color(0xFF64748B),
                   ),
                 ),
               ),
@@ -144,6 +124,7 @@ class JurisdictionCard extends StatelessWidget {
     required IconData icon,
     required String label,
     required String value,
+    String? badge,
     required bool isSelected,
     required VoidCallback onTap,
   }) {
@@ -159,31 +140,60 @@ class JurisdictionCard extends StatelessWidget {
               size: 22,
             ),
             SizedBox(width: 14.w),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 11.5.sp,
-                    fontWeight: FontWeight.w500,
-                    color: const Color(0xFF94A3B8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 11.5.sp,
+                      fontWeight: FontWeight.w500,
+                      color: const Color(0xFF94A3B8),
+                    ),
                   ),
-                ),
-                SizedBox(height: 2.h),
-                Text(
-                  value,
-                  style: TextStyle(
-                    fontSize: 14.5.sp,
-                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                    color: isSelected
-                        ? const Color(0xFF1E293B)
-                        : const Color(0xFF94A3B8),
+                  SizedBox(height: 2.h),
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          value,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 14.5.sp,
+                            fontWeight:
+                                isSelected ? FontWeight.w700 : FontWeight.w500,
+                            color: isSelected
+                                ? const Color(0xFF1E293B)
+                                : const Color(0xFF94A3B8),
+                          ),
+                        ),
+                      ),
+                      if (badge != null) ...[
+                        SizedBox(width: 8.w),
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                              horizontal: 8.w, vertical: 2.h),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE8F5E9),
+                            borderRadius: BorderRadius.circular(6.r),
+                          ),
+                          child: Text(
+                            badge,
+                            style: TextStyle(
+                              fontSize: 11.5.sp,
+                              fontWeight: FontWeight.w800,
+                              color: const Color(0xFF166534),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-            const Spacer(),
             const Icon(
               Icons.keyboard_arrow_down_rounded,
               color: Color(0xFF94A3B8),

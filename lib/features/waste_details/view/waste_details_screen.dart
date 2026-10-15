@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
+import 'package:suchigo_user_app/features/home/view/home_screen.dart';
 import 'package:suchigo_user_app/features/home/view/widgets/bottom_nav_bar.dart';
+import 'package:suchigo_user_app/widgets/custom_toast.dart';
 import '../view_model/waste_details_view_model.dart';
 import 'widgets/segmented_tab_bar.dart';
 import 'widgets/sub_waste_rate_card.dart';
@@ -67,15 +69,15 @@ class _WasteDetailsScreenState extends State<WasteDetailsScreen> {
                           Center(
                             child: Column(
                               children: [
-                                Text(
-                                  'WASTE DETAILS',
-                                  style: TextStyle(
-                                    fontSize: 26.sp,
-                                    fontWeight: FontWeight.w900,
-                                    color: const Color(0xFF166534),
-                                    letterSpacing: 1.0,
+                                  Text(
+                                    'WASTE DETAILS',
+                                    style: TextStyle(
+                                      fontSize: 26.sp,
+                                      fontWeight: FontWeight.w900,
+                                      color: const Color(0xFF2EA043),
+                                      letterSpacing: 1.0,
+                                    ),
                                   ),
-                                ),
                                 SizedBox(height: 10.h),
                                 Text(
                                   "Help us understand what you're disposing of so we can\ncome prepared.",
@@ -92,36 +94,67 @@ class _WasteDetailsScreenState extends State<WasteDetailsScreen> {
                           ),
                           SizedBox(height: 24.h),
 
-                          // Residential / Commercial Segmented Control
-                          SegmentedTabBar(
-                            selectedType: vm.propertyType,
-                            onChanged: (type) => vm.setPropertyType(type),
-                          ),
-                          SizedBox(height: 20.h),
-
-                          // 2x2 Waste Categories Grid
-                          GridView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            gridDelegate:
-                                SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              crossAxisSpacing: 16.w,
-                              mainAxisSpacing: 16.h,
-                              childAspectRatio: 0.95,
+                          // Mint green container wrapping Tab Bar & 2x2 Grid
+                          Container(
+                            width: double.infinity,
+                            padding: EdgeInsets.all(16.w),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE2F0E5),
+                              borderRadius: BorderRadius.circular(28.r),
                             ),
-                            itemCount: vm.categories.length,
-                            itemBuilder: (context, index) {
-                              final cat = vm.categories[index];
-                              final isSelected =
-                                  vm.selectedCategoryId == cat.id;
+                            child: Column(
+                              children: [
+                                // Residential / Commercial Segmented Control
+                                SegmentedTabBar(
+                                  selectedType: vm.propertyType,
+                                  onChanged: (type) => vm.setPropertyType(type),
+                                ),
+                                SizedBox(height: 18.h),
 
-                              return WasteTypeCard(
-                                model: cat,
-                                isSelected: isSelected,
-                                onTap: () => vm.selectCategory(cat.id),
-                              );
-                            },
+                                // 2x2 Waste Categories Grid
+                                GridView.builder(
+                                  shrinkWrap: true,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  gridDelegate:
+                                      SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: 2,
+                                    crossAxisSpacing: 14.w,
+                                    mainAxisSpacing: 14.h,
+                                    childAspectRatio: 0.86,
+                                  ),
+                                  itemCount: vm.categories.length,
+                                  itemBuilder: (context, index) {
+                                    final cat = vm.categories[index];
+                                    final isSelected =
+                                        vm.selectedCategoryId == cat.id;
+
+                                    return WasteTypeCard(
+                                      model: cat,
+                                      isSelected: isSelected,
+                                      onTap: () {
+                                        if (cat.id == 'e_waste') {
+                                          CustomToast.showDisabledAlert(
+                                            context,
+                                            message:
+                                                'E-Waste collection is currently disabled.',
+                                          );
+                                          return;
+                                        }
+                                        if (!cat.isEnabled) {
+                                          CustomToast.showDisabledAlert(
+                                            context,
+                                            message:
+                                                '${cat.title} service is currently disabled.',
+                                          );
+                                          return;
+                                        }
+                                        vm.selectCategory(cat.id);
+                                      },
+                                    );
+                                  },
+                                ),
+                              ],
+                            ),
                           ),
                           SizedBox(height: 28.h),
 
@@ -138,7 +171,16 @@ class _WasteDetailsScreenState extends State<WasteDetailsScreen> {
                           SizedBox(height: 14.h),
 
                           // Sub-waste Rates List
-                          if (vm.subWasteRates.isNotEmpty)
+                          if (vm.isLoading)
+                            Padding(
+                              padding: EdgeInsets.symmetric(vertical: 32.h),
+                              child: const Center(
+                                child: CircularProgressIndicator(
+                                  color: Color(0xFF166534),
+                                ),
+                              ),
+                            )
+                          else if (vm.subWasteRates.isNotEmpty)
                             ...vm.subWasteRates.map(
                               (rate) => Padding(
                                 padding: EdgeInsets.only(bottom: 14.h),
@@ -159,71 +201,74 @@ class _WasteDetailsScreenState extends State<WasteDetailsScreen> {
                                 ),
                               ),
                             ),
-                          SizedBox(height: 18.h),
+                          SizedBox(height: 16.h),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
 
-                          // Continue Action Button
-                          Center(
-                            child: InkWell(
-                              onTap: vm.canContinue
-                                  ? () {
-                                      Navigator.pushNamed(
-                                        context,
-                                        '/SchedulePickupScreen',
-                                      );
-                                    }
-                                  : null,
-                              borderRadius: BorderRadius.circular(28.r),
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 200),
-                                width: 220.w,
-                                height: 50.h,
-                                decoration: BoxDecoration(
-                                  color: vm.canContinue
-                                      ? const Color(0xFF166534)
-                                      : const Color(0xFFA8D5BA)
-                                          .withValues(alpha: 0.6),
-                                  borderRadius: BorderRadius.circular(28.r),
-                                  boxShadow: vm.canContinue
-                                      ? [
-                                          BoxShadow(
-                                            color: const Color(0xFF166534)
-                                                .withValues(alpha: 0.3),
-                                            blurRadius: 10,
-                                            offset: const Offset(0, 4),
-                                          ),
-                                        ]
-                                      : [],
-                                ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      'Continue',
-                                      style: TextStyle(
-                                        fontSize: 16.sp,
-                                        fontWeight: FontWeight.w700,
-                                        color: vm.canContinue
-                                            ? Colors.white
-                                            : const Color(0xFF166534)
-                                                .withValues(alpha: 0.6),
-                                      ),
-                                    ),
-                                    SizedBox(width: 8.w),
-                                    Icon(
-                                      Icons.east_rounded,
-                                      color: vm.canContinue
-                                          ? Colors.white
-                                          : const Color(0xFF166534)
-                                              .withValues(alpha: 0.6),
-                                      size: 18,
-                                    ),
-                                  ],
-                                ),
+                // Sticky Continue Button above Bottom Nav Bar
+                Container(
+                  width: double.infinity,
+                  color: Colors.transparent,
+                  padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
+                  child: Center(
+                    child: InkWell(
+                      onTap: vm.canContinue
+                          ? () {
+                              Navigator.pushNamed(
+                                context,
+                                '/SchedulePickupScreen',
+                              );
+                            }
+                          : null,
+                      borderRadius: BorderRadius.circular(28.r),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        width: 240.w,
+                        height: 48.h,
+                        decoration: BoxDecoration(
+                          color: vm.canContinue
+                              ? const Color(0xFF166534)
+                              : const Color(0xFFA8D5BA).withValues(alpha: 0.6),
+                          borderRadius: BorderRadius.circular(28.r),
+                          boxShadow: vm.canContinue
+                              ? [
+                                  BoxShadow(
+                                    color: const Color(0xFF166534)
+                                        .withValues(alpha: 0.3),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ]
+                              : [],
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              'Continue',
+                              style: TextStyle(
+                                fontSize: 16.sp,
+                                fontWeight: FontWeight.w700,
+                                color: vm.canContinue
+                                    ? Colors.white
+                                    : const Color(0xFF166534)
+                                        .withValues(alpha: 0.6),
                               ),
                             ),
-                          ),
-                          SizedBox(height: 24.h),
-                        ],
+                            SizedBox(width: 8.w),
+                            Icon(
+                              Icons.east_rounded,
+                              color: vm.canContinue
+                                  ? Colors.white
+                                  : const Color(0xFF166534)
+                                      .withValues(alpha: 0.6),
+                              size: 18.sp,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -231,11 +276,26 @@ class _WasteDetailsScreenState extends State<WasteDetailsScreen> {
 
                 // Bottom Navigation Bar
                 CustomBottomNavBar(
-                  currentIndex: vm.bottomNavIndex,
+                  currentIndex: 0,
                   onTap: (index) {
-                    vm.setBottomNavIndex(index);
                     if (index == 0) {
-                      Navigator.pop(context);
+                      if (Navigator.canPop(context)) {
+                        Navigator.pop(context);
+                      } else {
+                        Navigator.pushNamedAndRemoveUntil(
+                          context,
+                          HomeScreen.routeName,
+                          (route) => false,
+                          arguments: 0,
+                        );
+                      }
+                    } else {
+                      Navigator.pushNamedAndRemoveUntil(
+                        context,
+                        HomeScreen.routeName,
+                        (route) => false,
+                        arguments: index,
+                      );
                     }
                   },
                 ),

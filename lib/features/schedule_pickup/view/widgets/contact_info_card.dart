@@ -73,7 +73,7 @@ class ContactInfoCard extends StatelessWidget {
           SizedBox(height: 16.h),
 
           // Email Address Field
-          _buildFieldLabel('Email Address (Optional)', isRequired: true),
+          _buildFieldLabel('Email Address (Optional)', isRequired: false),
           SizedBox(height: 6.h),
           _buildInputField(
             controller: emailController,
@@ -118,7 +118,7 @@ class ContactInfoCard extends StatelessWidget {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFFAFCFA),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(14.r),
         border: Border.all(
           color: const Color(0xFFE2E8F0),
@@ -140,11 +140,15 @@ class ContactInfoCard extends StatelessWidget {
             fontWeight: FontWeight.w400,
             color: const Color(0xFFB0BEC5),
           ),
+          filled: false,
+          fillColor: Colors.transparent,
           contentPadding: EdgeInsets.symmetric(
             horizontal: 16.w,
             vertical: 14.h,
           ),
           border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
         ),
       ),
     );

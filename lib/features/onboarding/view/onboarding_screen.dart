@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import 'package:suchigo_user_app/features/auth/view/auth_screen.dart';
 import '../view_model/onboarding_view_model.dart';
+import 'package:suchigo_user_app/widgets/app_button_widget.dart';
 import 'widgets/onboarding_indicator.dart';
 import 'widgets/onboarding_slider_item.dart';
 
@@ -116,7 +117,26 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             ),
 
                             // Next / Get Started Pill Button
-                            InkWell(
+                            AppButton(
+                              text: currentSlide?.buttonText ?? 'Next',
+                              height: 48.h,
+                              borderRadius: 25.r,
+                              padding: EdgeInsets.symmetric(
+                                horizontal: vm.isLastSlide ? 24.w : 20.w,
+                              ),
+                              suffixIcon: const Icon(
+                                Icons.east_rounded,
+                                color: Colors.white,
+                                size: 18,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFF166534)
+                                      .withValues(alpha: 0.25),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
                               onTap: () {
                                 vm.nextPage(
                                   onComplete: () {
@@ -127,45 +147,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                   },
                                 );
                               },
-                              borderRadius: BorderRadius.circular(25.r),
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 250),
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: vm.isLastSlide ? 24.w : 22.w,
-                                  vertical: 12.h,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF166534),
-                                  borderRadius: BorderRadius.circular(25.r),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: const Color(0xFF166534)
-                                          .withValues(alpha: 0.25),
-                                      blurRadius: 10,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      currentSlide?.buttonText ?? 'Next',
-                                      style: TextStyle(
-                                        fontSize: 15.sp,
-                                        fontWeight: FontWeight.w700,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                    SizedBox(width: 8.w),
-                                    const Icon(
-                                      Icons.east_rounded,
-                                      color: Colors.white,
-                                      size: 18,
-                                    ),
-                                  ],
-                                ),
-                              ),
                             ),
                           ],
                         ),

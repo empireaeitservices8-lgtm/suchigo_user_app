@@ -17,13 +17,19 @@ class AuthRequestModel {
   const AuthRequestModel({
     required this.phoneNumber,
     this.countryCode = '+91',
-    this.mode = AuthMode.register,
+    this.mode = AuthMode.login,
   });
 
-  String get fullPhoneNumber => '$countryCode$phoneNumber';
+  String get fullPhoneNumber {
+    final cleanPhone = phoneNumber.replaceAll(RegExp(r'\s+'), '');
+    if (cleanPhone.startsWith('+')) {
+      return cleanPhone;
+    }
+    return '$countryCode$cleanPhone';
+  }
 
   Map<String, dynamic> toSendOTPJson() => {
-        'phone_number': phoneNumber,
+        'phone_number': fullPhoneNumber,
       };
 }
 
@@ -52,31 +58,85 @@ class SendOTPResponseModel {
       );
 }
 
-class OTPVerificationModel {
+/// Request of `otp/verify/`
+class VerifyOTPRequestModel {
   final String phoneNumber;
   final String otp;
-  final bool isVerified;
-  final String? token;
+  final String countryCode;
 
-  const OTPVerificationModel({
+  const VerifyOTPRequestModel({
     required this.phoneNumber,
     required this.otp,
-    this.isVerified = false,
-    this.token,
+    this.countryCode = '+91',
   });
+
+  String get fullPhoneNumber {
+    final cleanPhone = phoneNumber.replaceAll(RegExp(r'\s+'), '');
+    if (cleanPhone.startsWith('+')) {
+      return cleanPhone;
+    }
+    return '$countryCode$cleanPhone';
+  }
+
+  Map<String, dynamic> toJson() => {
+        'phone_number': fullPhoneNumber,
+        'otp': otp,
+      };
+}
+
+/// Response of `otp/verify/`
+class OTPVerificationModel {
+  final String message;
+  final String? error;
+  final bool isVerified;
+  final String? token;
+  final String? phoneNumber;
+  final String? otp;
+
+  const OTPVerificationModel({
+    this.message = '',
+    this.error,
+    this.isVerified = true,
+    this.token,
+    this.phoneNumber,
+    this.otp,
+  });
+
+  factory OTPVerificationModel.fromJson(Map<dynamic, dynamic> json) =>
+      OTPVerificationModel(
+        message: json['message']?.toString() ?? json['error']?.toString() ?? '',
+        error: json['error']?.toString(),
+        token: json['token']?.toString(),
+        phoneNumber: json['phone_number']?.toString(),
+        otp: json['otp']?.toString(),
+        isVerified: json['error'] == null &&
+            (json['message']?.toString().toLowerCase().contains('success') == true ||
+                json['is_verified'] == true ||
+                (json['message'] != null && json['message'].toString().isNotEmpty)),
+      );
 }
 
 class LoginRequestModel {
   final String phoneNumber;
   final String otp;
+  final String countryCode;
 
   const LoginRequestModel({
     required this.phoneNumber,
     required this.otp,
+    this.countryCode = '+91',
   });
 
+  String get fullPhoneNumber {
+    final cleanPhone = phoneNumber.replaceAll(RegExp(r'\s+'), '');
+    if (cleanPhone.startsWith('+')) {
+      return cleanPhone;
+    }
+    return '$countryCode$cleanPhone';
+  }
+
   Map<String, dynamic> toJson() => {
-        'phone_number': phoneNumber,
+        'phone_number': fullPhoneNumber,
         'otp': otp,
       };
 }
@@ -84,10 +144,12 @@ class LoginRequestModel {
 class LoginResponseModel {
   final String? token;
   final int? userId;
+  final String? username;
   final String? email;
   final String? phoneNumber;
   final String? firstName;
   final String? lastName;
+  final bool canAccessApp;
   final String? message;
   final String? error;
   final bool isRegistered;
@@ -95,10 +157,12 @@ class LoginResponseModel {
   const LoginResponseModel({
     this.token,
     this.userId,
+    this.username,
     this.email,
     this.phoneNumber,
     this.firstName,
     this.lastName,
+    this.canAccessApp = true,
     this.message,
     this.error,
     this.isRegistered = true,
@@ -110,10 +174,14 @@ class LoginResponseModel {
       LoginResponseModel(
         token: json['token']?.toString(),
         userId: int.tryParse(json['user_id']?.toString() ?? ''),
+        username: json['username']?.toString(),
         email: json['email']?.toString(),
         phoneNumber: json['phone_number']?.toString(),
         firstName: json['first_name']?.toString(),
         lastName: json['last_name']?.toString(),
+        canAccessApp: json['can_access_app'] == null ||
+            json['can_access_app'] == true ||
+            json['can_access_app']?.toString().toLowerCase() == 'true',
         message: json['message']?.toString(),
         error: json['error']?.toString(),
         isRegistered: json['is_registered'] == true ||
@@ -129,23 +197,39 @@ class CompleteProfileRequestModel {
   final String phoneNumber;
   final String firstName;
   final String lastName;
-  final String otp;
-  final Gender? gender;
+  final Gender gender;
+  final String? email;
+  final String? otp;
+  final String countryCode;
 
   const CompleteProfileRequestModel({
     required this.phoneNumber,
     required this.firstName,
     required this.lastName,
-    required this.otp,
-    this.gender,
+    this.gender = Gender.female,
+    this.email,
+    this.otp,
+    this.countryCode = '+91',
   });
 
+  String get fullPhoneNumber {
+    final cleanPhone = phoneNumber.replaceAll(RegExp(r'\s+'), '');
+    if (cleanPhone.startsWith('+')) {
+      return cleanPhone;
+    }
+    if (cleanPhone.startsWith('91') && cleanPhone.length > 10) {
+      return '+$cleanPhone';
+    }
+    return '$countryCode$cleanPhone';
+  }
+
   Map<String, dynamic> toJson() => {
+        'phone_number': fullPhoneNumber,
         'first_name': firstName,
         'last_name': lastName,
-        'phone_number': phoneNumber,
-        'otp': otp,
-        if (gender != null) 'gender': gender!.name,
+        'gender': gender.name,
+        'otp': otp ?? '',
+        if (email != null && email!.isNotEmpty) 'email': email,
       };
 }
 
@@ -153,6 +237,7 @@ class CompleteProfileRequestModel {
 class UserProfileModel {
   final String token;
   final int? userId;
+  final String? username;
   final String email;
   final String phoneNumber;
   final String firstName;
@@ -161,6 +246,7 @@ class UserProfileModel {
   const UserProfileModel({
     required this.token,
     this.userId,
+    this.username,
     required this.email,
     required this.phoneNumber,
     required this.firstName,
@@ -171,6 +257,7 @@ class UserProfileModel {
       UserProfileModel(
         token: json['token']?.toString() ?? '',
         userId: int.tryParse(json['user_id']?.toString() ?? ''),
+        username: json['username']?.toString(),
         email: json['email']?.toString() ?? '',
         phoneNumber: json['phone_number']?.toString() ?? '',
         firstName: json['first_name']?.toString() ?? '',

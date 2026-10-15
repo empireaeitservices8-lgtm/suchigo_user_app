@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:suchigo_user_app/widgets/app_button_widget.dart';
 
 class BookingConfirmedDialog extends StatelessWidget {
   final String standardRate;
@@ -115,31 +116,14 @@ class BookingConfirmedDialog extends StatelessWidget {
                 SizedBox(height: 20.h),
 
                 // Close Button
-                SizedBox(
-                  width: double.infinity,
+                AppButton(
+                  text: 'Close',
                   height: 48.h,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      onClose?.call();
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF6B7280),
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16.r),
-                      ),
-                    ),
-                    child: Text(
-                      'Close',
-                      style: TextStyle(
-                        fontSize: 15.sp,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
+                  backgroundColor: const Color(0xFF6B7280),
+                  onTap: () {
+                    Navigator.pop(context);
+                    onClose?.call();
+                  },
                 ),
               ],
             ),

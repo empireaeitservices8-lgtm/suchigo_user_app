@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
+import '../../../../widgets/custom_toast.dart';
 import '../view_model/home_view_model.dart';
 import 'widgets/activity_card.dart';
 import 'widgets/bottom_nav_bar.dart';
@@ -13,8 +14,9 @@ import 'widgets/waste_category_list.dart';
 
 class HomeScreen extends StatefulWidget {
   static const routeName = '/HomeScreen';
+  final int initialTabIndex;
 
-  const HomeScreen({super.key});
+  const HomeScreen({super.key, this.initialTabIndex = 0});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -26,7 +28,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _viewModel = HomeViewModel();
+    _viewModel = HomeViewModel(initialTabIndex: widget.initialTabIndex);
   }
 
   @override
@@ -37,22 +39,25 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: Colors.white,
         body: Consumer<HomeViewModel>(
           builder: (context, vm, child) {
-            if (vm.isLoading) {
-              return const Center(
-                child: CircularProgressIndicator(
-                  color: Color(0xFF166534),
-                ),
-              );
-            }
-
-            final data = vm.dashboardData;
-
             Widget currentContent;
             if (vm.selectedTabIndex == 1) {
               currentContent = const SettingsView();
             } else if (vm.selectedTabIndex == 2) {
-              currentContent = const ProfileView();
+              final profile = vm.dashboardData.profile;
+              currentContent = ProfileView(
+                profile: profile,
+                bagsRecycled: profile?.numberOfBags ?? 0,
+                walletBalance:
+                    '₹${(profile?.walletBalance ?? 0.0).toStringAsFixed(2)}',
+              );
+            } else if (vm.isLoading) {
+              currentContent = const Center(
+                child: CircularProgressIndicator(
+                  color: Color(0xFF166534),
+                ),
+              );
             } else {
+              final data = vm.dashboardData;
               currentContent = Column(
                 children: [
                   // Top Gradient App Bar / Header
@@ -78,13 +83,22 @@ class _HomeScreenState extends State<HomeScreen> {
                           WasteCategoryList(
                             categories: data.categories,
                             selectedCategoryId: vm.selectedCategoryId,
-                            onSelectCategory: (id) {
+                            onSelectCategory: (id) async {
+                              if (id == 'e_waste') {
+                                CustomToast.showDisabledAlert(
+                                  context,
+                                  message:
+                                      'E-Waste collection is currently disabled.',
+                                );
+                                return;
+                              }
                               vm.selectCategory(id);
-                              Navigator.pushNamed(
+                              await Navigator.pushNamed(
                                 context,
                                 '/WasteDetailsScreen',
                                 arguments: id,
                               );
+                              vm.clearCategorySelection();
                             },
                           ),
                           SizedBox(height: 20.h),

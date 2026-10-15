@@ -5,17 +5,18 @@ import '../repo/home_repo.dart';
 class HomeViewModel extends ViewModel {
   final HomeRepository _repository;
 
-  int _selectedTabIndex = 0;
-  String _selectedCategoryId = 'hazardous';
+  int _selectedTabIndex;
+  String? _selectedCategoryId;
   HomeDashboardModel _dashboardData = const HomeDashboardModel();
 
-  HomeViewModel({HomeRepository? repository})
-      : _repository = repository ?? HomeRepositoryImpl() {
+  HomeViewModel({HomeRepository? repository, int initialTabIndex = 0})
+      : _repository = repository ?? HomeRepositoryImpl(),
+        _selectedTabIndex = initialTabIndex {
     fetchDashboardData();
   }
 
   int get selectedTabIndex => _selectedTabIndex;
-  String get selectedCategoryId => _selectedCategoryId;
+  String? get selectedCategoryId => _selectedCategoryId;
   HomeDashboardModel get dashboardData => _dashboardData;
 
   void setTabIndex(int index) {
@@ -23,8 +24,13 @@ class HomeViewModel extends ViewModel {
     notifyListeners();
   }
 
-  void selectCategory(String categoryId) {
+  void selectCategory(String? categoryId) {
     _selectedCategoryId = categoryId;
+    notifyListeners();
+  }
+
+  void clearCategorySelection() {
+    _selectedCategoryId = null;
     notifyListeners();
   }
 

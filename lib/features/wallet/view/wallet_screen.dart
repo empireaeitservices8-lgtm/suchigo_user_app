@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
+import 'package:razorpay_flutter/razorpay_flutter.dart';
+import 'package:suchigo_user_app/helpers/sp_helper.dart';
+import 'package:suchigo_user_app/utils/sp_keys.dart' as sp_keys;
+import 'package:suchigo_user_app/widgets/custom_toast.dart';
 import '../model/wallet_model.dart';
 import '../view_model/wallet_view_model.dart';
 import 'widgets/add_money_bottom_sheet.dart';
@@ -16,11 +20,87 @@ class WalletScreen extends StatefulWidget {
 
 class _WalletScreenState extends State<WalletScreen> {
   late WalletViewModel _viewModel;
+  late Razorpay _razorpay;
 
   @override
   void initState() {
     super.initState();
     _viewModel = WalletViewModel();
+    _razorpay = Razorpay();
+    _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, _handlePaymentSuccess);
+    _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, _handlePaymentError);
+    _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, _handleExternalWallet);
+  }
+
+  @override
+  void dispose() {
+    _razorpay.clear();
+    _viewModel.dispose();
+    super.dispose();
+  }
+
+  void _handlePaymentSuccess(PaymentSuccessResponse response) {
+    debugPrint('[WalletScreen] Razorpay SUCCESS: ${response.paymentId}');
+    if (mounted) {
+      CustomToast.show(
+        context,
+        message: 'Payment Successful! Payment ID: ${response.paymentId}',
+      );
+      _viewModel.loadWalletData();
+    }
+  }
+
+  void _handlePaymentError(PaymentFailureResponse response) {
+    debugPrint(
+        '[WalletScreen] Razorpay ERROR: ${response.code} - ${response.message}');
+    if (mounted) {
+      CustomToast.show(
+        context,
+        message: response.message ?? 'Payment Cancelled or Failed',
+      );
+    }
+  }
+
+  void _handleExternalWallet(ExternalWalletResponse response) {
+    debugPrint('[WalletScreen] External Wallet: ${response.walletName}');
+    if (mounted) {
+      CustomToast.show(
+        context,
+        message: 'External wallet selected: ${response.walletName}',
+      );
+    }
+  }
+
+  Future<void> _openRazorpay(RazorpayOrderModel order) async {
+    final phone =
+        await SpHelper.getString(sp_keys.keyUseMobile) ?? '+917306929058';
+    final email = await SpHelper.getString(sp_keys.keyEmail) ?? '';
+
+    final options = {
+      'key': order.keyId,
+      'amount': order.amount,
+      'name': 'SuchiGo',
+      'order_id': order.orderId,
+      'description': 'Wallet Refill',
+      'timeout': 300,
+      'prefill': {
+        'contact': phone,
+        'email': email,
+      },
+    };
+
+    debugPrint('[WalletScreen] Opening Razorpay with options: $options');
+    try {
+      _razorpay.open(options);
+    } catch (e) {
+      debugPrint('[WalletScreen] Error opening Razorpay: $e');
+      if (mounted) {
+        CustomToast.show(
+          context,
+          message: 'Unable to open payment gateway: $e',
+        );
+      }
+    }
   }
 
   void _showAddMoneySheet() {
@@ -30,7 +110,11 @@ class _WalletScreenState extends State<WalletScreen> {
       backgroundColor: Colors.transparent,
       builder: (sheetContext) => ChangeNotifierProvider.value(
         value: _viewModel,
-        child: const AddMoneyBottomSheet(),
+        child: AddMoneyBottomSheet(
+          onOrderCreated: (order) {
+            _openRazorpay(order);
+          },
+        ),
       ),
     );
   }
@@ -50,44 +134,49 @@ class _WalletScreenState extends State<WalletScreen> {
 
                 // Main Scrollable Transaction History
                 Expanded(
-                  child: SingleChildScrollView(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 18.w,
-                      vertical: 20.h,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Transaction History Heading
-                        Text(
-                          'Transaction History',
-                          style: TextStyle(
-                            fontSize: 18.sp,
-                            fontWeight: FontWeight.w800,
-                            color: const Color(0xFF1E293B),
+                  child: RefreshIndicator(
+                    color: const Color(0xFF166534),
+                    onRefresh: () async => vm.loadWalletData(),
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 18.w,
+                        vertical: 20.h,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Transaction History Heading
+                          Text(
+                            'Transaction History',
+                            style: TextStyle(
+                              fontSize: 18.sp,
+                              fontWeight: FontWeight.w800,
+                              color: const Color(0xFF1E293B),
+                            ),
                           ),
-                        ),
-                        SizedBox(height: 14.h),
+                          SizedBox(height: 14.h),
 
-                        // Transactions List
-                        if (vm.transactions.isEmpty)
-                          _buildEmptyState()
-                        else
-                          ListView.separated(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: vm.transactions.length,
-                            separatorBuilder: (ctx, i) =>
-                                SizedBox(height: 12.h),
-                            itemBuilder: (ctx, index) {
-                              return _buildTransactionItem(
-                                vm.transactions[index],
-                              );
-                            },
-                          ),
+                          // Transactions List
+                          if (vm.transactions.isEmpty)
+                            _buildEmptyState()
+                          else
+                            ListView.separated(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: vm.transactions.length,
+                              separatorBuilder: (ctx, i) =>
+                                  SizedBox(height: 12.h),
+                              itemBuilder: (ctx, index) {
+                                return _buildTransactionItem(
+                                  vm.transactions[index],
+                                );
+                              },
+                            ),
 
-                        SizedBox(height: 20.h),
-                      ],
+                          SizedBox(height: 20.h),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -374,11 +463,5 @@ class _WalletScreenState extends State<WalletScreen> {
         ),
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    _viewModel.dispose();
-    super.dispose();
   }
 }

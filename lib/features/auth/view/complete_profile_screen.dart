@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:suchigo_user_app/features/home/view/home_screen.dart';
 import '../model/auth_model.dart';
 import '../view_model/complete_profile_view_model.dart';
+import 'package:suchigo_user_app/widgets/app_button_widget.dart';
 
 class CompleteProfileScreenArgs {
   final String phoneNumber;
@@ -110,8 +111,8 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                       child: Center(
                         child: Image.asset(
                           'assets/images/splash_logo.png',
-                          width: 72.w,
-                          height: 72.w,
+                          width: 95.w,
+                          height: 95.w,
                           fit: BoxFit.contain,
                         ),
                       ),
@@ -256,7 +257,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                           ),
                           SizedBox(height: 10.h),
 
-                          // Gender Toggle Row
+                          // Gender Toggle Row (Female / Male)
                           Row(
                             children: [
                               // Female Option
@@ -278,7 +279,8 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                                   gender: Gender.male,
                                   label: 'Male',
                                   icon: Icons.male_rounded,
-                                  isSelected: vm.selectedGender == Gender.male,
+                                  isSelected:
+                                      vm.selectedGender == Gender.male,
                                   onTap: () => vm.setGender(Gender.male),
                                 ),
                               ),
@@ -288,72 +290,34 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                           SizedBox(height: 28.h),
 
                           // Create Account Button
-                          SizedBox(
-                            width: double.infinity,
-                            height: 52.h,
-                            child: ElevatedButton(
-                              onPressed: vm.isFormValid && !vm.isLoading
-                                  ? () async {
-                                      final success =
-                                          await vm.createAccount();
-                                      if (!context.mounted) return;
-                                      if (success) {
-                                        Navigator.pushNamedAndRemoveUntil(
-                                          context,
-                                          HomeScreen.routeName,
-                                          (route) => false,
-                                        );
-                                      } else if (vm.errorMessage != null) {
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(SnackBar(
-                                          content: Text(vm.errorMessage!),
-                                        ));
-                                      }
-                                    }
-                                  : null,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: vm.isFormValid
-                                    ? const Color(0xFF166534)
-                                    : const Color(0xFFE2E8F0),
-                                elevation: 0,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16.r),
-                                ),
-                              ),
-                              child: vm.isLoading
-                                  ? const SizedBox(
-                                      width: 24,
-                                      height: 24,
-                                      child: CircularProgressIndicator(
-                                        color: Colors.white,
-                                        strokeWidth: 2.5,
-                                      ),
-                                    )
-                                  : Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Text(
-                                          'Create Account',
-                                          style: TextStyle(
-                                            fontSize: 16.sp,
-                                            fontWeight: FontWeight.w700,
-                                            color: vm.isFormValid
-                                                ? Colors.white
-                                                : const Color(0xFF94A3B8),
-                                          ),
-                                        ),
-                                        SizedBox(width: 8.w),
-                                        Icon(
-                                          Icons.check_circle_outline_rounded,
-                                          color: vm.isFormValid
-                                              ? Colors.white
-                                              : const Color(0xFF94A3B8),
-                                          size: 20,
-                                        ),
-                                      ],
-                                    ),
+                          AppButton(
+                            text: 'Create Account',
+                            isEnabled: vm.isFormValid,
+                            isLoading: vm.isLoading,
+                            suffixIcon: Icon(
+                              Icons.check_circle_outline_rounded,
+                              color: vm.isFormValid
+                                  ? Colors.white
+                                  : const Color(0xFF94A3B8),
+                              size: 20.sp,
                             ),
+                            onTap: () async {
+                              final success = await vm.createAccount();
+                              if (!context.mounted) return;
+                              if (success) {
+                                Navigator.pushNamedAndRemoveUntil(
+                                  context,
+                                  HomeScreen.routeName,
+                                  (route) => false,
+                                );
+                              } else if (vm.errorMessage != null) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(vm.errorMessage!),
+                                  ),
+                                );
+                              }
+                            },
                           ),
                         ],
                       ),
@@ -381,7 +345,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
       height: 54.h,
       padding: EdgeInsets.symmetric(horizontal: 16.w),
       decoration: BoxDecoration(
-        color: const Color(0xFFFAFCFA),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16.r),
         border: Border.all(
           color: const Color(0xFFE2E8F0),
@@ -413,7 +377,11 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                   fontWeight: FontWeight.w400,
                   color: const Color(0xFF94A3B8),
                 ),
+                filled: false,
+                fillColor: Colors.transparent,
                 border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
                 contentPadding: EdgeInsets.zero,
               ),
             ),

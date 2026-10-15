@@ -2,10 +2,14 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:suchigo_user_app/features/home/view/home_screen.dart';
 import 'package:suchigo_user_app/features/onboarding/view/onboarding_screen.dart';
 import 'package:suchigo_user_app/features/onboarding/view/widgets/leaf_background.dart';
 import 'package:suchigo_user_app/features/splashscreen/view_model/splash_view_model.dart';
+import 'package:suchigo_user_app/helpers/sp_helper.dart';
 import 'package:suchigo_user_app/providers/theme_provider.dart';
+import 'package:suchigo_user_app/services/web_api_services.dart';
+import 'package:suchigo_user_app/utils/sp_keys.dart' as sp_keys;
 
 class SplashScreen extends StatefulWidget {
   static const routeName = '/SplashScreen';
@@ -54,9 +58,20 @@ class _SplashScreenState extends State<SplashScreen>
       context.read<ThemeProvider>().applySavedTheme(context);
     });
 
-    _timer = Timer(const Duration(milliseconds: 2600), () {
-      if (mounted) {
-        Navigator.pushReplacementNamed(context, OnboardingScreen.routeName);
+    _timer = Timer(const Duration(milliseconds: 2400), () async {
+      if (!mounted) return;
+      final token = await SpHelper.getString(sp_keys.keyToken);
+      final hasToken = token != null && token.trim().isNotEmpty;
+
+      if (hasToken) {
+        await WebAPIService().initTokenToHeader();
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, HomeScreen.routeName);
+        }
+      } else {
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, OnboardingScreen.routeName);
+        }
       }
     });
   }
@@ -96,7 +111,7 @@ class _SplashScreenState extends State<SplashScreen>
                 },
                 child: Image.asset(
                   'assets/images/splash_logo.png',
-                  width: 260.w,
+                  width: 175.w,
                   fit: BoxFit.contain,
                 ),
               ),

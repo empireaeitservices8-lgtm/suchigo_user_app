@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
+import '../../orders/view/widgets/pickup_tracking_bottom_sheet.dart';
+import '../../home/view/home_screen.dart';
 import '../model/booking_confirmed_model.dart';
 import '../view_model/booking_confirmed_view_model.dart';
 import 'widgets/booking_bottom_nav_bar.dart';
@@ -99,6 +101,85 @@ class _BookingConfirmedScreenState extends State<BookingConfirmedScreen> {
                               co2Saved: vm.booking.co2Saved,
                               recycledPercent: vm.booking.recycledPercent,
                               treesEquiv: vm.booking.treesEquiv,
+                            ),
+                            SizedBox(height: 18.h),
+
+                            // 5. Back to Home Button
+                            SizedBox(
+                              width: double.infinity,
+                              height: 52.h,
+                              child: ElevatedButton.icon(
+                                onPressed: () {
+                                  Navigator.pushNamedAndRemoveUntil(
+                                    context,
+                                    HomeScreen.routeName,
+                                    (route) => false,
+                                  );
+                                },
+                                icon: Icon(
+                                  Icons.home_rounded,
+                                  color: Colors.white,
+                                  size: 22.sp,
+                                ),
+                                label: Text(
+                                  'Back to Home',
+                                  style: TextStyle(
+                                    fontSize: 15.5.sp,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF2E7D32),
+                                  foregroundColor: Colors.white,
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16.r),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            SizedBox(height: 12.h),
+
+                            // 6. Track My Booking Button
+                            SizedBox(
+                              width: double.infinity,
+                              height: 52.h,
+                              child: OutlinedButton.icon(
+                                onPressed: () {
+                                  final rawId = vm.booking.bookingId
+                                      .replaceAll(RegExp(r'[^0-9]'), '');
+                                  final pickupId = int.tryParse(rawId) ?? 138;
+                                  PickupTrackingBottomSheet.show(
+                                    context,
+                                    pickupId: pickupId > 0 ? pickupId : 138,
+                                  );
+                                },
+                                icon: Icon(
+                                  Icons.explore_outlined,
+                                  color: const Color(0xFF2E7D32),
+                                  size: 20.sp,
+                                ),
+                                label: Text(
+                                  'Track My Booking',
+                                  style: TextStyle(
+                                    fontSize: 15.5.sp,
+                                    fontWeight: FontWeight.w700,
+                                    color: const Color(0xFF2E7D32),
+                                  ),
+                                ),
+                                style: OutlinedButton.styleFrom(
+                                  backgroundColor: const Color(0xFFF1F8F3),
+                                  side: const BorderSide(
+                                    color: Color(0xFFC8E6C9),
+                                    width: 1.2,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16.r),
+                                  ),
+                                  elevation: 0,
+                                ),
+                              ),
                             ),
                             SizedBox(height: 24.h),
                           ],

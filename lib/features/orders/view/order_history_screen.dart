@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
-import 'package:suchigo_user_app/features/map_location/view/map_screen.dart';
+import 'package:suchigo_user_app/features/home/view/home_screen.dart';
+import 'package:suchigo_user_app/features/home/view/widgets/bottom_nav_bar.dart';
 import 'package:suchigo_user_app/features/schedule_pickup/view/schedule_pickup_screen.dart';
+import 'package:suchigo_user_app/widgets/app_button_widget.dart';
 import '../model/order_model.dart';
 import '../view_model/order_view_model.dart';
+import 'track_pickup_screen.dart';
 
 class OrderHistoryScreen extends StatefulWidget {
   static const routeName = '/OrderHistoryScreen';
@@ -35,11 +38,11 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
             return Column(
               children: [
                 // Top Green Header with Welcome Banner
-                _buildHeader(context),
+                _buildHeader(context, vm),
 
-                // Main Scrollable Content (Filter Tabs & Orders)
+                // Main Content
                 Expanded(
-                  child: SingleChildScrollView(
+                  child: Padding(
                     padding: EdgeInsets.symmetric(
                       horizontal: 18.w,
                       vertical: 16.h,
@@ -50,27 +53,43 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                         // Filter Pills (All, Completed, Pending, Cancelled)
                         _buildFilterTabs(vm),
 
-                        SizedBox(height: 18.h),
+                        SizedBox(height: 16.h),
 
-                        // Orders List
-                        if (vm.filteredOrders.isEmpty)
-                          _buildEmptyState()
-                        else
-                          ListView.separated(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: vm.filteredOrders.length,
-                            separatorBuilder: (ctx, i) =>
-                                SizedBox(height: 14.h),
-                            itemBuilder: (ctx, index) {
-                              return _buildOrderCard(
-                                context,
-                                vm.filteredOrders[index],
-                              );
-                            },
-                          ),
-
-                        SizedBox(height: 20.h),
+                        // Orders List / Loader / Empty State
+                        Expanded(
+                          child: vm.isLoading
+                              ? const Center(
+                                  child: CircularProgressIndicator(
+                                    color: Color(0xFF166534),
+                                  ),
+                                )
+                              : RefreshIndicator(
+                                  color: const Color(0xFF166534),
+                                  onRefresh: () => vm.loadOrders(),
+                                  child: vm.filteredOrders.isEmpty
+                                      ? SingleChildScrollView(
+                                          physics:
+                                              const AlwaysScrollableScrollPhysics(),
+                                          child: SizedBox(
+                                            height: 340.h,
+                                            child: _buildEmptyState(),
+                                          ),
+                                        )
+                                      : ListView.separated(
+                                          physics:
+                                              const AlwaysScrollableScrollPhysics(),
+                                          itemCount: vm.filteredOrders.length,
+                                          separatorBuilder: (ctx, i) =>
+                                              SizedBox(height: 16.h),
+                                          itemBuilder: (ctx, index) {
+                                            return _buildOrderCard(
+                                              context,
+                                              vm.filteredOrders[index],
+                                            );
+                                          },
+                                        ),
+                                ),
+                        ),
                       ],
                     ),
                   ),
@@ -79,11 +98,35 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
             );
           },
         ),
+        bottomNavigationBar: CustomBottomNavBar(
+          currentIndex: 2,
+          onTap: (index) {
+            if (index == 2) {
+              if (Navigator.canPop(context)) {
+                Navigator.pop(context);
+              } else {
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  HomeScreen.routeName,
+                  (route) => false,
+                  arguments: 2,
+                );
+              }
+            } else {
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                HomeScreen.routeName,
+                (route) => false,
+                arguments: index,
+              );
+            }
+          },
+        ),
       ),
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildHeader(BuildContext context, OrderViewModel vm) {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -106,30 +149,34 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
           child: Column(
             children: [
               // Header Title Bar
-              Row(
+              Stack(
+                alignment: Alignment.center,
                 children: [
-                  InkWell(
-                    onTap: () => Navigator.pop(context),
-                    borderRadius: BorderRadius.circular(20.r),
-                    child: Container(
-                      width: 40.w,
-                      height: 40.w,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF8ECC8E).withValues(alpha: 0.5),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Center(
-                        child: Icon(
-                          Icons.chevron_left_rounded,
-                          color: Colors.white,
-                          size: 26,
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: InkWell(
+                      onTap: () => Navigator.pop(context),
+                      borderRadius: BorderRadius.circular(20.r),
+                      child: Container(
+                        width: 40.w,
+                        height: 40.w,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF8ECC8E).withValues(alpha: 0.5),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Center(
+                          child: Icon(
+                            Icons.chevron_left_rounded,
+                            color: Colors.white,
+                            size: 26,
+                          ),
                         ),
                       ),
                     ),
                   ),
-                  SizedBox(width: 12.w),
                   Text(
                     'Order History',
+                    textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 20.sp,
                       fontWeight: FontWeight.w800,
@@ -161,9 +208,9 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                 child: Column(
                   children: [
                     Text(
-                      'Welcome back, User! 👋',
+                      'Welcome back, ${vm.userName}! 👏',
                       style: TextStyle(
-                        fontSize: 17.sp,
+                        fontSize: 17.5.sp,
                         fontWeight: FontWeight.w800,
                         color: const Color(0xFF1E293B),
                       ),
@@ -231,7 +278,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
       onTap: onTap,
       borderRadius: BorderRadius.circular(20.r),
       child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 9.h),
+        padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 8.5.h),
         decoration: BoxDecoration(
           color: isSelected ? const Color(0xFF1D723B) : Colors.white,
           borderRadius: BorderRadius.circular(20.r),
@@ -280,58 +327,67 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header Row (Icon + Code + Status Badge)
+          // Header Row (Recycling Icon + Waste Type Name & WC Code + Status Badge)
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Container(
-                    width: 44.w,
-                    height: 44.w,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE8F5E9),
-                      borderRadius: BorderRadius.circular(12.r),
-                    ),
-                    child: Center(
-                      child: Icon(
-                        Icons.recycling_rounded,
-                        color: const Color(0xFF1D723B),
-                        size: 24.sp,
+              Expanded(
+                child: Row(
+                  children: [
+                    Container(
+                      width: 44.w,
+                      height: 44.w,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE8F5E9),
+                        borderRadius: BorderRadius.circular(12.r),
                       ),
-                    ),
-                  ),
-                  SizedBox(width: 12.w),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '${order.count}',
-                        style: TextStyle(
-                          fontSize: 16.sp,
-                          fontWeight: FontWeight.w800,
-                          color: const Color(0xFF1E293B),
+                      child: Center(
+                        child: Icon(
+                          Icons.recycling_rounded,
+                          color: const Color(0xFF1D723B),
+                          size: 24.sp,
                         ),
                       ),
-                      Text(
-                        order.code,
-                        style: TextStyle(
-                          fontSize: 12.sp,
-                          fontWeight: FontWeight.w500,
-                          color: const Color(0xFF94A3B8),
-                        ),
+                    ),
+                    SizedBox(width: 12.w),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            order.displayTitle,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 16.sp,
+                              fontWeight: FontWeight.w800,
+                              color: const Color(0xFF1E293B),
+                            ),
+                          ),
+                          SizedBox(height: 1.h),
+                          Text(
+                            order.code,
+                            style: TextStyle(
+                              fontSize: 12.sp,
+                              fontWeight: FontWeight.w500,
+                              color: const Color(0xFF94A3B8),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
+              SizedBox(width: 8.w),
 
               // Status Badge
-              _buildStatusBadge(order.status),
+              _buildStatusBadge(order.orderStatus, order.statusLabel),
             ],
           ),
 
-          SizedBox(height: 14.h),
+          SizedBox(height: 16.h),
 
           // Date Row
           _buildInfoRow(
@@ -354,96 +410,95 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
           ),
 
           SizedBox(height: 14.h),
-          Divider(
+          const Divider(
             height: 1,
-            color: const Color(0xFFF1F5F9),
+            color: Color(0xFFE2E8F0),
           ),
           SizedBox(height: 14.h),
 
-          // Action Buttons (Track Vehicle & Repeat Booking)
-          Row(
-            children: [
-              // Track Vehicle
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () {
-                    Navigator.pushNamed(context, MapScreen.routeName);
-                  },
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(
-                      color: Color(0xFF1D723B),
-                      width: 1.4,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14.r),
-                    ),
-                    padding: EdgeInsets.symmetric(vertical: 12.h),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.my_location_rounded,
-                        color: const Color(0xFF1D723B),
-                        size: 18.sp,
-                      ),
-                      SizedBox(width: 6.w),
-                      Text(
-                        'Track Vehicle',
-                        style: TextStyle(
-                          fontSize: 13.5.sp,
-                          fontWeight: FontWeight.w700,
-                          color: const Color(0xFF1D723B),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              SizedBox(width: 12.w),
-
-              // Repeat Booking
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pushNamed(
-                      context,
-                      SchedulePickupScreen.routeName,
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1D723B),
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14.r),
-                    ),
-                    padding: EdgeInsets.symmetric(vertical: 12.h),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.repeat_rounded,
-                        color: Colors.white,
-                        size: 18.sp,
-                      ),
-                      SizedBox(width: 6.w),
-                      Text(
-                        'Repeat Booking',
-                        style: TextStyle(
-                          fontSize: 13.5.sp,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
+          // Action Button
+          _buildActionButtons(context, order),
         ],
       ),
+    );
+  }
+
+  Widget _buildActionButtons(BuildContext context, OrderModel order) {
+    if (order.orderStatus == OrderStatus.cancelled ||
+        order.orderStatus == OrderStatus.completed) {
+      return SizedBox(
+        width: double.infinity,
+        child: AppButton(
+          text: 'Repeat Booking',
+          height: 44.h,
+          borderRadius: 12.r,
+          backgroundColor: const Color(0xFF1D723B),
+          fontSize: 14.sp,
+          prefixIcon: Icon(
+            Icons.repeat_rounded,
+            color: Colors.white,
+            size: 18.sp,
+          ),
+          onTap: () {
+            Navigator.pushNamed(
+              context,
+              SchedulePickupScreen.routeName,
+            );
+          },
+        ),
+      );
+    }
+
+    // Pending / In-progress: Show both Track Vehicle and Repeat Booking
+    return Row(
+      children: [
+        // Track Vehicle
+        Expanded(
+          child: AppButton.outlined(
+            text: 'Track Vehicle',
+            height: 44.h,
+            borderRadius: 12.r,
+            borderColor: const Color(0xFF1D723B),
+            textColor: const Color(0xFF1D723B),
+            fontSize: 13.sp,
+            prefixIcon: Icon(
+              Icons.my_location_rounded,
+              color: const Color(0xFF1D723B),
+              size: 16.sp,
+            ),
+            onTap: () {
+              Navigator.pushNamed(
+                context,
+                TrackPickupScreen.routeName,
+                arguments: order.id,
+              );
+            },
+          ),
+        ),
+        SizedBox(width: 10.w),
+
+        // Repeat Booking
+        Expanded(
+          child: AppButton(
+            text: 'Repeat Booking',
+            height: 44.h,
+            borderRadius: 12.r,
+            backgroundColor: const Color(0xFF1D723B),
+            fontSize: 13.sp,
+            prefixIcon: Icon(
+              Icons.repeat_rounded,
+              color: Colors.white,
+              size: 16.sp,
+            ),
+            onTap: () {
+              Navigator.pushNamed(
+                context,
+                SchedulePickupScreen.routeName,
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 
@@ -464,9 +519,10 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
           child: Text(
             text,
             style: TextStyle(
-              fontSize: 13.sp,
+              fontSize: 13.5.sp,
               color: const Color(0xFF475569),
               fontWeight: FontWeight.w500,
+              height: 1.3,
             ),
           ),
         ),
@@ -474,7 +530,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     );
   }
 
-  Widget _buildStatusBadge(OrderStatus status) {
+  Widget _buildStatusBadge(OrderStatus status, String label) {
     Color bg;
     Color text;
     String iconEmoji;
@@ -503,13 +559,13 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     }
 
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(12.r),
+        borderRadius: BorderRadius.circular(20.r),
       ),
       child: Text(
-        '$iconEmoji  ${status.name}',
+        '$iconEmoji  $label',
         style: TextStyle(
           fontSize: 12.sp,
           fontWeight: FontWeight.w700,
@@ -532,10 +588,18 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
             ),
             SizedBox(height: 12.h),
             Text(
-              'No orders found',
+              'No pickup orders found',
               style: TextStyle(
                 fontSize: 15.sp,
                 fontWeight: FontWeight.w600,
+                color: const Color(0xFF94A3B8),
+              ),
+            ),
+            SizedBox(height: 6.h),
+            Text(
+              'Your scheduled waste collections will appear here',
+              style: TextStyle(
+                fontSize: 13.sp,
                 color: const Color(0xFF94A3B8),
               ),
             ),

@@ -64,7 +64,7 @@ class PickupScheduleCard extends StatelessWidget {
               height: 52.h,
               padding: EdgeInsets.symmetric(horizontal: 16.w),
               decoration: BoxDecoration(
-                color: const Color(0xFFFAFCFA),
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(14.r),
                 border: Border.all(
                   color: const Color(0xFFE2E8F0),
@@ -97,6 +97,25 @@ class PickupScheduleCard extends StatelessWidget {
               ),
             ),
           ),
+          SizedBox(height: 6.h),
+          Row(
+            children: [
+              Icon(
+                Icons.info_outline_rounded,
+                size: 13.sp,
+                color: const Color(0xFF166534),
+              ),
+              SizedBox(width: 4.w),
+              Text(
+                'Pickups are scheduled on Fridays & Mondays only',
+                style: TextStyle(
+                  fontSize: 11.5.sp,
+                  fontWeight: FontWeight.w500,
+                  color: const Color(0xFF166534),
+                ),
+              ),
+            ],
+          ),
           SizedBox(height: 16.h),
 
           // Number of Bags Field
@@ -104,7 +123,7 @@ class PickupScheduleCard extends StatelessWidget {
           SizedBox(height: 6.h),
           Container(
             decoration: BoxDecoration(
-              color: const Color(0xFFFAFCFA),
+              color: Colors.white,
               borderRadius: BorderRadius.circular(14.r),
               border: Border.all(
                 color: const Color(0xFFE2E8F0),
@@ -120,11 +139,15 @@ class PickupScheduleCard extends StatelessWidget {
                 color: const Color(0xFF1E293B),
               ),
               decoration: InputDecoration(
+                filled: false,
+                fillColor: Colors.transparent,
                 contentPadding: EdgeInsets.symmetric(
                   horizontal: 16.w,
                   vertical: 14.h,
                 ),
                 border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
               ),
             ),
           ),

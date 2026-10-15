@@ -3,6 +3,7 @@ import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:internet_connection_checker/internet_connection_checker.dart';
+import 'package:suchigo_user_app/widgets/app_button_widget.dart';
 
 class ConnectionFailedScreenParams {
   ///The function in which the failed API is called
@@ -67,9 +68,10 @@ class _ConnectionFailedScreenState extends State<ConnectionFailedScreen> {
                 Column(
                   children: [
                     //Replace below Placeholder with appropriate graphics
-                    const Placeholder(),
-                    ElevatedButton(
-                      onPressed: () async {
+                    AppButton(
+                      text: 'Try again',
+                      isLoading: isLoading,
+                      onTap: () async {
                         try {
                           loadingNotifier.value = true;
                           if (await InternetConnectionChecker
@@ -88,7 +90,6 @@ class _ConnectionFailedScreenState extends State<ConnectionFailedScreen> {
                           log(e.toString());
                         }
                       },
-                      child: const Text('Try again'),
                     )
                   ],
                 ),

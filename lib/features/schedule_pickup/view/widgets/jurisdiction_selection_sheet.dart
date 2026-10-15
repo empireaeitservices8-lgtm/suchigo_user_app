@@ -1,20 +1,42 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import '../../model/schedule_pickup_model.dart';
+
+class JurisdictionOption {
+  final int id;
+  final String title;
+  final String? subtitle;
+  final dynamic data;
+
+  const JurisdictionOption({
+    required this.id,
+    required this.title,
+    this.subtitle,
+    this.data,
+  });
+
+  @override
+  String toString() => title;
+}
 
 class JurisdictionSelectionSheet extends StatefulWidget {
   final String title;
   final String searchHint;
-  final Future<List<String>> Function() loadItems;
+  final Future<List<JurisdictionOption>> Function()? loadItems;
+  final List<JurisdictionOption>? initialItems;
   final String selectedItem;
+  final int? selectedId;
   final bool isWard;
-  final ValueChanged<String> onSelect;
+  final ValueChanged<JurisdictionOption> onSelect;
 
   const JurisdictionSelectionSheet({
     super.key,
     required this.title,
     required this.searchHint,
-    required this.loadItems,
+    this.loadItems,
+    this.initialItems,
     required this.selectedItem,
+    this.selectedId,
     this.isWard = false,
     required this.onSelect,
   });
@@ -27,21 +49,29 @@ class JurisdictionSelectionSheet extends StatefulWidget {
 class _JurisdictionSelectionSheetState
     extends State<JurisdictionSelectionSheet> {
   final TextEditingController _searchController = TextEditingController();
-  List<String> _allItems = [];
-  List<String> _filteredItems = [];
-  bool _isLoading = true;
+  List<JurisdictionOption> _allItems = [];
+  List<JurisdictionOption> _filteredItems = [];
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _fetchItems();
+    if (widget.initialItems != null) {
+      _allItems = widget.initialItems!;
+      _filteredItems = widget.initialItems!;
+      _isLoading = false;
+    } else if (widget.loadItems != null) {
+      _isLoading = true;
+      _fetchItems();
+    }
     _searchController.addListener(_onSearchChanged);
   }
 
   void _fetchItems() async {
+    if (widget.loadItems == null) return;
     setState(() => _isLoading = true);
     try {
-      final items = await widget.loadItems();
+      final items = await widget.loadItems!();
       if (mounted) {
         setState(() {
           _allItems = items;
@@ -66,9 +96,12 @@ class _JurisdictionSelectionSheetState
       if (query.isEmpty) {
         _filteredItems = _allItems;
       } else {
-        _filteredItems = _allItems
-            .where((item) => item.toLowerCase().contains(query))
-            .toList();
+        _filteredItems = _allItems.where((item) {
+          final matchesTitle = item.title.toLowerCase().contains(query);
+          final matchesSubtitle =
+              item.subtitle?.toLowerCase().contains(query) ?? false;
+          return matchesTitle || matchesSubtitle;
+        }).toList();
       }
     });
   }
@@ -154,7 +187,7 @@ class _JurisdictionSelectionSheetState
             height: 46.h,
             padding: EdgeInsets.symmetric(horizontal: 14.w),
             decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFC),
+              color: Colors.white,
               borderRadius: BorderRadius.circular(14.r),
               border: Border.all(
                 color: const Color(0xFFE2E8F0),
@@ -184,7 +217,11 @@ class _JurisdictionSelectionSheetState
                         fontWeight: FontWeight.w400,
                         color: const Color(0xFFB0BEC5),
                       ),
+                      filled: false,
+                      fillColor: Colors.transparent,
                       border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
                       contentPadding: EdgeInsets.zero,
                     ),
                   ),
@@ -237,8 +274,14 @@ class _JurisdictionSelectionSheetState
                         itemCount: _filteredItems.length,
                         itemBuilder: (context, index) {
                           final item = _filteredItems[index];
-                          final isSelected =
-                              widget.selectedItem == item;
+                          final isSelected = (widget.selectedId != null &&
+                                  widget.selectedId == item.id) ||
+                              widget.selectedItem == item.title;
+
+                          final wardNumber = item.data is WardModel &&
+                                  (item.data as WardModel).wardNumber > 0
+                              ? (item.data as WardModel).wardNumber.toString()
+                              : '${index + 1}';
 
                           return InkWell(
                             onTap: () {
@@ -277,7 +320,7 @@ class _JurisdictionSelectionSheetState
                                       ),
                                       child: Center(
                                         child: Text(
-                                          '${index + 1}',
+                                          wardNumber,
                                           style: TextStyle(
                                             fontSize: 14.sp,
                                             fontWeight: FontWeight.w800,
@@ -294,27 +337,47 @@ class _JurisdictionSelectionSheetState
                                         color: Color(0xFFF1F5F9),
                                         shape: BoxShape.circle,
                                       ),
-                                      child: const Center(
+                                      child: Center(
                                         child: Icon(
-                                          Icons.apartment_rounded,
-                                          color: Color(0xFF64748B),
+                                          item.subtitle != null
+                                              ? Icons.location_city_rounded
+                                              : Icons.landscape_rounded,
+                                          color: const Color(0xFF64748B),
                                           size: 18,
                                         ),
                                       ),
                                     ),
                                   SizedBox(width: 14.w),
 
-                                  // Title Text
+                                  // Title & Subtitle Text
                                   Expanded(
-                                    child: Text(
-                                      item,
-                                      style: TextStyle(
-                                        fontSize: 14.5.sp,
-                                        fontWeight: isSelected
-                                            ? FontWeight.w700
-                                            : FontWeight.w600,
-                                        color: const Color(0xFF1E293B),
-                                      ),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          item.title,
+                                          style: TextStyle(
+                                            fontSize: 14.5.sp,
+                                            fontWeight: isSelected
+                                                ? FontWeight.w700
+                                                : FontWeight.w600,
+                                            color: const Color(0xFF1E293B),
+                                          ),
+                                        ),
+                                        if (item.subtitle != null &&
+                                            item.subtitle!.isNotEmpty) ...[
+                                          SizedBox(height: 2.h),
+                                          Text(
+                                            item.subtitle!,
+                                            style: TextStyle(
+                                              fontSize: 12.sp,
+                                              fontWeight: FontWeight.w500,
+                                              color: const Color(0xFF64748B),
+                                            ),
+                                          ),
+                                        ],
+                                      ],
                                     ),
                                   ),
 

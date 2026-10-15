@@ -15,7 +15,10 @@ abstract class AuthRepository {
     LoginRequestModel request, {
     Function(AppError error)? onError,
   });
-  Future<OTPVerificationModel> verifyOTP(String phoneNumber, String otp);
+  Future<OTPVerificationModel> verifyOTP(
+    VerifyOTPRequestModel request, {
+    Function(AppError error)? onError,
+  });
   Future<SendOTPResponseModel> resendOTP(
     AuthRequestModel request, {
     Function(AppError error)? onError,
@@ -67,13 +70,17 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<OTPVerificationModel> verifyOTP(String phoneNumber, String otp) async {
-    await Future.delayed(const Duration(milliseconds: 700));
-    return OTPVerificationModel(
-      phoneNumber: phoneNumber,
-      otp: otp,
-      isVerified: true,
-      token: 'dummy_jwt_token_suchigo_user',
+  Future<OTPVerificationModel> verifyOTP(
+    VerifyOTPRequestModel request, {
+    Function(AppError error)? onError,
+  }) async {
+    return _apiService.executeAPI<OTPVerificationModel>(
+      methodToCall: _apiService.dio.post(
+        urlVerifyOTP,
+        data: request.toJson(),
+      ),
+      converter: OTPVerificationModel.fromJson,
+      onError: onError,
     );
   }
 

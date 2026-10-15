@@ -13,7 +13,7 @@ class AuthViewModel extends ViewModel {
       List.generate(4, (_) => TextEditingController());
   final List<FocusNode> otpFocusNodes = List.generate(4, (_) => FocusNode());
 
-  AuthMode _mode = AuthMode.register;
+  AuthMode _mode = AuthMode.login;
   bool _isPhoneValid = false;
   bool _isNotRegistered = false;
   int _resendCountdown = 57;
@@ -152,7 +152,7 @@ class AuthViewModel extends ViewModel {
       if (_mode == AuthMode.login) {
         final result = await _repository.login(
           LoginRequestModel(
-            phoneNumber: phoneNumber,
+            phoneNumber: fullPhoneNumber,
             otp: otpCode,
           ),
           onError: (error) {
@@ -174,12 +174,29 @@ class AuthViewModel extends ViewModel {
               'No account found with this phone number. Please register first.';
           return false;
         }
+        if (!result.canAccessApp) {
+          _errorMessage = result.message ?? 'Access denied. Your account is not authorized to access this app.';
+          return false;
+        }
         if (!result.hasToken && _errorMessage == null) {
           _errorMessage = result.message ?? 'Login failed. Please try again.';
         }
         return result.hasToken;
       } else {
-        final result = await _repository.verifyOTP(phoneNumber, otpCode);
+        final result = await _repository.verifyOTP(
+          VerifyOTPRequestModel(
+            phoneNumber: fullPhoneNumber,
+            otp: otpCode,
+          ),
+          onError: (error) {
+            _errorMessage = error.message;
+            _checkIfUnregistered(error);
+          },
+        );
+        if (result.error != null && result.error!.isNotEmpty) {
+          _errorMessage = result.error;
+          return false;
+        }
         return result.isVerified;
       }
     } catch (e) {

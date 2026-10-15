@@ -29,8 +29,14 @@ class CompleteProfileViewModel extends ViewModel {
   String? get errorMessage => _errorMessage;
 
   String get formattedPhoneNumber {
-    final clean = phoneNumber.replaceAll('+', '').replaceAll('91', '');
-    return '+91$clean';
+    final cleanPhone = phoneNumber.replaceAll(RegExp(r'\s+'), '');
+    if (cleanPhone.startsWith('+')) {
+      return cleanPhone;
+    }
+    if (cleanPhone.startsWith('91') && cleanPhone.length > 10) {
+      return '+$cleanPhone';
+    }
+    return '+91$cleanPhone';
   }
 
   bool get isFormValid =>
@@ -50,6 +56,11 @@ class CompleteProfileViewModel extends ViewModel {
 
   Future<bool> createAccount() async {
     if (!isFormValid) return false;
+    if (otp.trim().isEmpty) {
+      _errorMessage = 'OTP is required. Please verify your phone number first.';
+      notifyListeners();
+      return false;
+    }
     _errorMessage = null;
     isLoading = true;
     try {
@@ -58,8 +69,8 @@ class CompleteProfileViewModel extends ViewModel {
           phoneNumber: phoneNumber,
           firstName: firstNameController.text.trim(),
           lastName: lastNameController.text.trim(),
-          otp: otp,
           gender: _selectedGender,
+          otp: otp,
         ),
         onError: (error) => _errorMessage = error.message,
       );

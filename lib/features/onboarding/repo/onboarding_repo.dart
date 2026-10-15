@@ -1,3 +1,5 @@
+import 'package:suchigo_user_app/helpers/sp_helper.dart';
+import 'package:suchigo_user_app/utils/sp_keys.dart' as sp_keys;
 import '../model/onboarding_model.dart';
 
 abstract class OnboardingRepository {
@@ -55,11 +57,11 @@ class OnboardingRepositoryImpl implements OnboardingRepository {
 
   @override
   Future<bool> setOnboardingCompleted() async {
-    return true;
+    return await SpHelper.saveBoolean(sp_keys.keyOnboardingCompleted, true);
   }
 
   @override
   Future<bool> isOnboardingCompleted() async {
-    return false;
+    return (await SpHelper.getBoolean(sp_keys.keyOnboardingCompleted)) ?? false;
   }
 }

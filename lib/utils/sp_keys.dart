@@ -9,3 +9,4 @@ const keyUserId = "KEY_USER_ID";
 const keyRoleId = "KEY_ROLE_ID";
 const keyRole = "KEY_ROLE";
 const keyLocalAuthStatus = "local_auth_status";
+const keyOnboardingCompleted = "KEY_ONBOARDING_COMPLETED";

@@ -63,7 +63,7 @@ class AdditionalDetailsCard extends StatelessWidget {
           SizedBox(height: 6.h),
           Container(
             decoration: BoxDecoration(
-              color: const Color(0xFFFAFCFA),
+              color: Colors.white,
               borderRadius: BorderRadius.circular(14.r),
               border: Border.all(
                 color: const Color(0xFFE2E8F0),
@@ -85,11 +85,15 @@ class AdditionalDetailsCard extends StatelessWidget {
                   fontWeight: FontWeight.w400,
                   color: const Color(0xFFB0BEC5),
                 ),
+                filled: false,
+                fillColor: Colors.transparent,
                 contentPadding: EdgeInsets.symmetric(
                   horizontal: 16.w,
                   vertical: 14.h,
                 ),
                 border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
               ),
             ),
           ),
@@ -107,7 +111,7 @@ class AdditionalDetailsCard extends StatelessWidget {
           SizedBox(height: 6.h),
           Container(
             decoration: BoxDecoration(
-              color: const Color(0xFFFAFCFA),
+              color: Colors.white,
               borderRadius: BorderRadius.circular(14.r),
               border: Border.all(
                 color: const Color(0xFFE2E8F0),
@@ -128,11 +132,15 @@ class AdditionalDetailsCard extends StatelessWidget {
                   fontWeight: FontWeight.w400,
                   color: const Color(0xFFB0BEC5),
                 ),
+                filled: false,
+                fillColor: Colors.transparent,
                 contentPadding: EdgeInsets.symmetric(
                   horizontal: 16.w,
                   vertical: 14.h,
                 ),
                 border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
               ),
             ),
           ),

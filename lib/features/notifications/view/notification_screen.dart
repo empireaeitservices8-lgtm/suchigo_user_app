@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
+import 'package:suchigo_user_app/features/orders/view/widgets/pickup_tracking_bottom_sheet.dart';
 import '../model/notification_model.dart';
 import '../view_model/notification_view_model.dart';
 import 'widgets/empty_notification_view.dart';
@@ -59,10 +60,18 @@ class _NotificationScreenState extends State<NotificationScreen> {
                               ),
                               itemCount: notifications.length,
                               itemBuilder: (context, index) {
+                                final item = notifications[index];
                                 return NotificationCard(
-                                  notification: notifications[index],
+                                  notification: item,
                                   onTap: () {
-                                    vm.markAsRead(notifications[index].id);
+                                    vm.markAsRead(item.id);
+                                    if (item.pickupId != null &&
+                                        item.pickupId! > 0) {
+                                      PickupTrackingBottomSheet.show(
+                                        context,
+                                        pickupId: item.pickupId!,
+                                      );
+                                    }
                                   },
                                 );
                               },

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:suchigo_user_app/features/auth/view/auth_screen.dart';
 
 import 'package:suchigo_user_app/features/settings/view/about_app_screen.dart';
 import 'package:suchigo_user_app/features/settings/view/help_support_screen.dart';
 import 'package:suchigo_user_app/features/settings/view/privacy_security_screen.dart';
+import 'package:suchigo_user_app/helpers/logout_helper.dart';
 
 class SettingsView extends StatelessWidget {
   const SettingsView({super.key});
@@ -82,7 +82,7 @@ class SettingsView extends StatelessWidget {
                           title: 'Logout',
                           isDestructive: true,
                           onTap: () {
-                            _showLogoutDialog(context);
+                            LogoutHelper.showLogoutDialog(context);
                           },
                         ),
                       ],
@@ -231,70 +231,6 @@ class SettingsView extends StatelessWidget {
         height: 1,
         thickness: 1,
         color: const Color(0xFFF1F5F9),
-      ),
-    );
-  }
-
-
-  void _showLogoutDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20.r),
-        ),
-        title: Text(
-          'Logout',
-          style: TextStyle(
-            fontWeight: FontWeight.w800,
-            color: const Color(0xFF0F4A26),
-            fontSize: 18.sp,
-          ),
-        ),
-        content: Text(
-          'Are you sure you want to logout from SuchiGo?',
-          style: TextStyle(
-            fontSize: 14.sp,
-            color: const Color(0xFF64748B),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(
-              'Cancel',
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                color: const Color(0xFF64748B),
-                fontSize: 14.sp,
-              ),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              Navigator.pushNamedAndRemoveUntil(
-                context,
-                AuthScreen.routeName,
-                (route) => false,
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFE53935),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12.r),
-              ),
-            ),
-            child: Text(
-              'Logout',
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
-                fontSize: 14.sp,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }

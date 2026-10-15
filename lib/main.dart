@@ -17,6 +17,7 @@ import 'providers/theme_provider.dart';
 import 'utils/interceptors.dart';
 import 'utils/localization.dart';
 import 'utils/routes.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'utils/themes.dart';
 
 void main() {
@@ -87,7 +88,7 @@ class MyApp extends StatelessWidget {
                   StackTrace.current.toString().log('', true);
                   child = AppStackInterceptorBuilder(child: child!);
                 }
-                return child!;
+                return FToastBuilder()(context, child);
               },
             );
           },

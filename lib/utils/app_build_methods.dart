@@ -5,6 +5,7 @@ import 'extensions.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:suchigo_user_app/widgets/custom_toast.dart';
 
 Widget buildCachedNetworkImage(
   String? url, {
@@ -59,13 +60,10 @@ showToast(String msg,
     Color? backgroundColor,
     Color? textColor,
     double? fontSize}) {
-  Fluttertoast.showToast(
-    msg: msg,
-    toastLength: Toast.LENGTH_SHORT,
-    gravity: gravity,
-    backgroundColor: backgroundColor,
-    textColor: textColor,
-    fontSize: fontSize,
+  CustomToast.show(
+    null,
+    message: msg,
+    backgroundColor: backgroundColor ?? const Color(0xFF1E2A3A),
   );
 }
 
