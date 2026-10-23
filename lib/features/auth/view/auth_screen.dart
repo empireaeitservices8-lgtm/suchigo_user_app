@@ -7,6 +7,7 @@ import 'package:suchigo_user_app/features/onboarding/view/widgets/suchigo_logo_w
 import '../model/auth_model.dart';
 import '../view_model/auth_view_model.dart';
 import 'package:suchigo_user_app/widgets/app_button_widget.dart';
+import 'package:suchigo_user_app/widgets/custom_toast.dart';
 import 'complete_profile_screen.dart';
 import 'widgets/otp_verification_sheet.dart';
 
@@ -37,7 +38,7 @@ class _AuthScreenState extends State<AuthScreen> {
         value: _viewModel,
         child: OTPVerificationSheet(
           onVerificationSuccess: () {
-            if (_viewModel.mode == AuthMode.register) {
+            if (!_viewModel.isRegistered) {
               Navigator.pushNamed(
                 context,
                 CompleteProfileScreen.routeName,
@@ -241,22 +242,10 @@ class _AuthScreenState extends State<AuthScreen> {
                               if (!context.mounted) return;
                               if (sent) {
                                 _showOTPBottomSheet();
-                              } else if (vm.isNotRegistered) {
-                                vm.setMode(AuthMode.register);
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      vm.errorMessage ??
-                                          'No account found. Switched to Register mode.',
-                                    ),
-                                    backgroundColor: const Color(0xFF166534),
-                                  ),
-                                );
                               } else if (vm.errorMessage != null) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(vm.errorMessage!),
-                                  ),
+                                CustomToast.show(
+                                  context,
+                                  message: vm.errorMessage!,
                                 );
                               }
                             },

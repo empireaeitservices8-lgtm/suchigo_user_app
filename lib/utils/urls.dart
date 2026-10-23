@@ -19,6 +19,8 @@ String urlLocalBodies = "https://suchigo.pythonanywhere.com/api/localbodies/";
 String urlWards = "https://suchigo.pythonanywhere.com/api/wards/";
 String urlDisposalRates = "https://suchigo.pythonanywhere.com/api/disposal-rates/";
 String urlPickupVehicleTracking = "${urlBase}pickup-vehicle-tracking/";
+String urlCalendarDates =
+    "https://suchigoapis.pythonanywhere.com/api/calendar-dates/";
 
 //Register
 String urlRegistrationRequestOTP = "${urlBase}register/request-otp";

@@ -333,14 +333,36 @@ class DisposalRateModel {
   factory DisposalRateModel.fromJson(Map<dynamic, dynamic> json) {
     return DisposalRateModel(
       id: int.tryParse(json['id']?.toString() ?? '') ?? 0,
-      localBodyId: int.tryParse(
-            json['local_body']?.toString() ??
-                json['local_body_id']?.toString() ??
-                '',
-          ) ??
+      localBodyId: int.tryParse(json['local_body_id']?.toString() ?? '') ??
+          int.tryParse(json['local_body']?.toString() ?? '') ??
           0,
       ratePerKg:
           double.tryParse(json['rate_per_kg']?.toString() ?? '') ?? 0.0,
+    );
+  }
+}
+
+/// Item returned by `/api/calendar-dates/?local_body_id=<id>`.
+class CalendarDateModel {
+  final int id;
+  final String localBodyName;
+  final DateTime date;
+
+  const CalendarDateModel({
+    required this.id,
+    required this.localBodyName,
+    required this.date,
+  });
+
+  static CalendarDateModel? tryFromJson(Map<dynamic, dynamic> json) {
+    final parsed = DateTime.tryParse(json['date']?.toString() ?? '');
+    if (parsed == null) return null;
+    return CalendarDateModel(
+      id: int.tryParse(json['id']?.toString() ?? '') ?? 0,
+      localBodyName: json['local_body_name']?.toString() ??
+          json['local_body']?.toString() ??
+          '',
+      date: DateTime(parsed.year, parsed.month, parsed.day),
     );
   }
 }

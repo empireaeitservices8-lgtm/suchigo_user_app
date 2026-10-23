@@ -125,12 +125,17 @@ mixin MixinAPIProvider {
             (e) => e is Map,
             orElse: () => null,
           ) as Map?;
-          if (res != null &&
-              res.containsKey('message') &&
-              res['message'] != null) {
-            onShowError(
-                AppError(message: res['message'].toString(), response: ex));
-            break;
+          if (res != null) {
+            if (res.containsKey('error') && res['error'] != null) {
+              onShowError(
+                  AppError(message: res['error'].toString(), response: ex));
+              break;
+            }
+            if (res.containsKey('message') && res['message'] != null) {
+              onShowError(
+                  AppError(message: res['message'].toString(), response: ex));
+              break;
+            }
           }
         }
         onShowError(

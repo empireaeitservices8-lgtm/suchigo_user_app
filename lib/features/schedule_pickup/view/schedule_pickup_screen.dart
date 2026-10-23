@@ -146,31 +146,39 @@ class _SchedulePickupScreenState extends State<SchedulePickupScreen> {
     }
   }
 
-  DateTime _getNextAvailablePickupDate() {
-    DateTime date = DateTime.now().add(const Duration(days: 1));
-    while (date.weekday != DateTime.friday && date.weekday != DateTime.monday) {
-      date = date.add(const Duration(days: 1));
-    }
-    return date;
-  }
-
   void _pickDate(BuildContext context) async {
-    final nextValidDate = _getNextAvailablePickupDate();
+    if (_viewModel.jurisdiction.localBodyId == null) {
+      _showLoadingToast('Please select a local body first', isError: true);
+      return;
+    }
+    if (_viewModel.isLoadingCalendarDates) {
+      _showLoadingToast('Loading available pickup dates. Please wait...');
+      return;
+    }
+    final availableDates = _viewModel.upcomingPickupDates;
+    if (availableDates.isEmpty) {
+      _showLoadingToast(
+        'No pickup dates available for ${_viewModel.jurisdiction.localBody}',
+        isError: true,
+      );
+      return;
+    }
+
+    final current = _viewModel.pickupDate;
+    final initial = current != null && availableDates.contains(current)
+        ? current
+        : availableDates.first;
+
     final picked = await showDatePicker(
       context: context,
-      initialDate: _viewModel.pickupDate != null &&
-              (_viewModel.pickupDate!.weekday == DateTime.friday ||
-                  _viewModel.pickupDate!.weekday == DateTime.monday) &&
-              !_viewModel.pickupDate!.isBefore(DateTime.now().subtract(const Duration(days: 1)))
-          ? _viewModel.pickupDate!
-          : nextValidDate,
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 120)),
+      initialDate: initial,
+      firstDate: availableDates.first,
+      lastDate: availableDates.last,
       selectableDayPredicate: (DateTime val) {
-        // Pickup is available on Friday and Monday only
-        return val.weekday == DateTime.friday || val.weekday == DateTime.monday;
+        // Only dates returned by the calendar-dates API are selectable
+        return _viewModel.isPickupDateAvailable(val);
       },
-      helpText: 'Select Pickup Date (Mondays & Fridays)',
+      helpText: 'Select Pickup Date',
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -211,7 +219,6 @@ class _SchedulePickupScreenState extends State<SchedulePickupScreen> {
                     ),
                     child: Column(
                       children: [
-
                         // 2. Contact Information Card
                         ContactInfoCard(
                           fullNameController: vm.fullNameController,
@@ -230,7 +237,8 @@ class _SchedulePickupScreenState extends State<SchedulePickupScreen> {
                               context,
                               '/MapScreen',
                             );
-                            if (result != null && result is SelectedAddressModel) {
+                            if (result != null &&
+                                result is SelectedAddressModel) {
                               vm.pickupAddressController.text =
                                   result.fullAddress;
                               if (result.state.isNotEmpty) {
@@ -304,14 +312,14 @@ class _SchedulePickupScreenState extends State<SchedulePickupScreen> {
                                     ? (pickup!.status[0].toUpperCase() +
                                         pickup.status.substring(1))
                                     : 'Confirmed',
-                                wasteType: pickup?.wasteTypeName.isNotEmpty ==
-                                        true
-                                    ? pickup!.wasteTypeName
-                                    : (vm.bagsCountController.text
-                                            .trim()
-                                            .isNotEmpty
-                                        ? vm.bagsCountController.text.trim()
-                                        : '1'),
+                                wasteType:
+                                    pickup?.wasteTypeName.isNotEmpty == true
+                                        ? pickup!.wasteTypeName
+                                        : (vm.bagsCountController.text
+                                                .trim()
+                                                .isNotEmpty
+                                            ? vm.bagsCountController.text.trim()
+                                            : '1'),
                                 collectionDate: vm.pickupDate != null
                                     ? DateFormat('EEEE, d MMM yyyy')
                                         .format(vm.pickupDate!)
@@ -326,23 +334,23 @@ class _SchedulePickupScreenState extends State<SchedulePickupScreen> {
                                             .trim()
                                             .isNotEmpty
                                         ? vm.fullNameController.text.trim()
-                                        : 'Shilpa New'),
-                                contactPhone: pickup
-                                            ?.contactNumber.isNotEmpty ==
-                                        true
-                                    ? pickup!.contactNumber
-                                    : (vm.contactNumberController.text
-                                            .trim()
-                                            .isNotEmpty
-                                        ? vm.contactNumberController.text.trim()
-                                        : '+917306929058'),
+                                        : ''),
+                                contactPhone:
+                                    pickup?.contactNumber.isNotEmpty == true
+                                        ? pickup!.contactNumber
+                                        : (vm.contactNumberController.text
+                                                .trim()
+                                                .isNotEmpty
+                                            ? vm.contactNumberController.text
+                                                .trim()
+                                            : ''),
                                 pickupAddress: pickup != null
                                     ? '${pickup.street},\n${pickup.district} – ${pickup.zipCode}'
                                     : (vm.pickupAddressController.text
                                             .trim()
                                             .isNotEmpty
-                                        ? '${vm.pickupAddressController.text.trim()}, ${vm.jurisdiction.district != "Not Selected" ? vm.jurisdiction.district : "Ernakulam"} - ${vm.zipCodeController.text.trim().isNotEmpty ? vm.zipCodeController.text.trim() : "682303"}'
-                                        : '9F, Kakkanad, Keralam, 682303,\nIndia,\nErnakulam – 682303'),
+                                        ? '${vm.pickupAddressController.text.trim()}, ${vm.jurisdiction.district != "Not Selected" ? vm.jurisdiction.district : ""} - ${vm.zipCodeController.text.trim().isNotEmpty ? vm.zipCodeController.text.trim() : ""}'
+                                        : ''),
                                 co2Saved: '2.4 kg',
                                 recycledPercent: '85%',
                                 treesEquiv: '0.3',

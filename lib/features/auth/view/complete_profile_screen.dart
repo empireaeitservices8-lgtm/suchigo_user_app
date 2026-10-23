@@ -5,6 +5,7 @@ import 'package:suchigo_user_app/features/home/view/home_screen.dart';
 import '../model/auth_model.dart';
 import '../view_model/complete_profile_view_model.dart';
 import 'package:suchigo_user_app/widgets/app_button_widget.dart';
+import 'package:suchigo_user_app/widgets/custom_toast.dart';
 
 class CompleteProfileScreenArgs {
   final String phoneNumber;
@@ -311,10 +312,9 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                                   (route) => false,
                                 );
                               } else if (vm.errorMessage != null) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(vm.errorMessage!),
-                                  ),
+                                CustomToast.show(
+                                  context,
+                                  message: vm.errorMessage!,
                                 );
                               }
                             },

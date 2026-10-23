@@ -3,7 +3,7 @@ import 'package:suchigo_user_app/utils/enums.dart';
 
 class AppConfig {
   static const appName = "SuchiGo";
-  static const bundleId = "com.suchigo.userapp";
+  static const bundleId = "com.suchigo.suchigo_app";
   static const designWidth = 375;
   static const designHeight = 812;
 

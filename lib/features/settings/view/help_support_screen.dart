@@ -96,6 +96,45 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
     }
   }
 
+  Future<void> _openWhatsApp(String phone) async {
+    final cleanPhone = phone.replaceAll(RegExp(r'[^0-9]'), '');
+    final Uri whatsappAppUri = Uri.parse(
+      'whatsapp://send?phone=$cleanPhone&text=${Uri.encodeComponent('Hello SuchiGo Support, I need assistance.')}',
+    );
+    final Uri whatsappWebUri = Uri.parse(
+      'https://wa.me/$cleanPhone?text=${Uri.encodeComponent('Hello SuchiGo Support, I need assistance.')}',
+    );
+
+    try {
+      if (await canLaunchUrl(whatsappAppUri)) {
+        await launchUrl(whatsappAppUri, mode: LaunchMode.externalApplication);
+        return;
+      }
+    } catch (_) {}
+
+    try {
+      final launched = await launchUrl(
+        whatsappWebUri,
+        mode: LaunchMode.externalApplication,
+      );
+      if (!launched) {
+        await launchUrl(
+          whatsappWebUri,
+          mode: LaunchMode.inAppBrowserView,
+        );
+      }
+    } catch (_) {
+      await Clipboard.setData(ClipboardData(text: '+$cleanPhone'));
+      if (mounted) {
+        CustomToast.show(
+          context,
+          message: 'WhatsApp number copied: +$cleanPhone',
+          icon: Icons.check_circle_outline_rounded,
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -125,9 +164,13 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Helpline (Toll-Free) Card
+            // Helpline Card
             _buildHelplineCard(),
-            SizedBox(height: 16.h),
+            SizedBox(height: 14.h),
+
+            // WhatsApp Support Card
+            _buildWhatsAppCard(),
+            SizedBox(height: 14.h),
 
             // Email Support Card
             _buildEmailCard(),
@@ -209,7 +252,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Helpline (Toll-Free)',
+                      'Helpline',
                       style: TextStyle(
                         fontSize: 17.5.sp,
                         fontWeight: FontWeight.w800,
@@ -218,7 +261,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
                     ),
                     SizedBox(height: 5.h),
                     Text(
-                      'Call our 24/7 dedicated toll-free helpline for immediate booking assistance.',
+                      'Call our 24/7 dedicated helpline for immediate booking assistance.',
                       style: TextStyle(
                         fontSize: 12.sp,
                         fontWeight: FontWeight.w400,
@@ -239,9 +282,9 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Text(
-                '1800-123-5678',
+                '+91 8111882244',
                 style: TextStyle(
-                  fontSize: 22.sp,
+                  fontSize: 20.sp,
                   fontWeight: FontWeight.w900,
                   color: Colors.white,
                   letterSpacing: 0.5,
@@ -250,7 +293,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
               Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  onTap: () => _makePhoneCall('18001235678'),
+                  onTap: () => _makePhoneCall('+918111882244'),
                   borderRadius: BorderRadius.circular(22.r),
                   child: Container(
                     padding: EdgeInsets.symmetric(
@@ -294,6 +337,91 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildWhatsAppCard() {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20.r),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _openWhatsApp('918111882244'),
+          borderRadius: BorderRadius.circular(20.r),
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
+            child: Row(
+              children: [
+                Container(
+                  width: 48.w,
+                  height: 48.w,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE8F5E9),
+                    borderRadius: BorderRadius.circular(14.r),
+                  ),
+                  child: Icon(
+                    Icons.chat_bubble_rounded,
+                    color: const Color(0xFF2E7D32),
+                    size: 24.sp,
+                  ),
+                ),
+                SizedBox(width: 14.w),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'WhatsApp Support',
+                        style: TextStyle(
+                          fontSize: 12.5.sp,
+                          fontWeight: FontWeight.w500,
+                          color: const Color(0xFF64748B),
+                        ),
+                      ),
+                      SizedBox(height: 2.h),
+                      Text(
+                        '+91 8111882244',
+                        style: TextStyle(
+                          fontSize: 15.sp,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF1E293B),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding:
+                      EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE8F5E9),
+                    borderRadius: BorderRadius.circular(14.r),
+                  ),
+                  child: Text(
+                    'CHAT',
+                    style: TextStyle(
+                      fontSize: 11.5.sp,
+                      fontWeight: FontWeight.w800,
+                      color: const Color(0xFF2E7D32),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

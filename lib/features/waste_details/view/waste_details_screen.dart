@@ -6,7 +6,7 @@ import 'package:suchigo_user_app/features/home/view/widgets/bottom_nav_bar.dart'
 import 'package:suchigo_user_app/widgets/custom_toast.dart';
 import '../view_model/waste_details_view_model.dart';
 import 'widgets/segmented_tab_bar.dart';
-import 'widgets/sub_waste_rate_card.dart';
+// import 'widgets/sub_waste_rate_card.dart';
 import 'widgets/waste_type_card.dart';
 
 class WasteDetailsScreen extends StatefulWidget {
@@ -156,6 +156,7 @@ class _WasteDetailsScreenState extends State<WasteDetailsScreen> {
                               ],
                             ),
                           ),
+                          /*
                           SizedBox(height: 28.h),
 
                           // Sub-Waste Rates & Pricing Section Header
@@ -202,6 +203,7 @@ class _WasteDetailsScreenState extends State<WasteDetailsScreen> {
                               ),
                             ),
                           SizedBox(height: 16.h),
+                          */
                         ],
                       ),
                     ),

@@ -49,7 +49,15 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
         }
         _nameController.text = _userName;
         if (cachedPhone != null && cachedPhone.trim().isNotEmpty) {
-          _phoneController.text = cachedPhone.trim();
+          var phone = cachedPhone.trim();
+          if (phone.startsWith('+91')) {
+            phone = phone.substring(3).trim();
+          } else if (phone.startsWith('91') && phone.length > 10) {
+            phone = phone.substring(2).trim();
+          } else if (phone.startsWith('+')) {
+            phone = phone.substring(1).trim();
+          }
+          _phoneController.text = phone;
         }
         if (cachedEmail != null && cachedEmail.trim().isNotEmpty) {
           _emailController.text = cachedEmail.trim();
@@ -284,10 +292,74 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
                       height: 1.4,
                     ),
                   ),
+                  SizedBox(height: 12.h),
+                  const Divider(height: 1, color: Color(0xFFE2E8F0)),
+                  SizedBox(height: 12.h),
+                  Text(
+                    'Office Phone',
+                    style: TextStyle(
+                      fontSize: 12.sp,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF64748B),
+                    ),
+                  ),
+                  SizedBox(height: 6.h),
+                  InkWell(
+                    onTap: () {
+                      Navigator.pop(context);
+                      _makeCall('+918111882244');
+                    },
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.phone_rounded,
+                          size: 16.sp,
+                          color: const Color(0xFF166534),
+                        ),
+                        SizedBox(width: 8.w),
+                        Text(
+                          '+91 8111882244',
+                          style: TextStyle(
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF166534),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
             SizedBox(height: 18.h),
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF166534),
+                foregroundColor: Colors.white,
+                minimumSize: Size(double.infinity, 46.h),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12.r),
+                ),
+                elevation: 0,
+              ),
+              onPressed: () {
+                Navigator.pop(context);
+                _makeCall('+918111882244');
+              },
+              icon: const Icon(
+                Icons.phone_rounded,
+                size: 20,
+                color: Colors.white,
+              ),
+              label: Text(
+                'Call Office (+91 8111882244)',
+                style: TextStyle(
+                  fontSize: 13.5.sp,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            SizedBox(height: 10.h),
             Row(
               children: [
                 Expanded(
@@ -330,15 +402,13 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
                 ),
                 SizedBox(width: 12.w),
                 Expanded(
-                  child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF166534),
-                      foregroundColor: Colors.white,
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
                       padding: EdgeInsets.symmetric(vertical: 12.h),
+                      side: const BorderSide(color: Color(0xFFCBD5E1)),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12.r),
                       ),
-                      elevation: 0,
                     ),
                     onPressed: () {
                       Navigator.pop(context);
@@ -347,13 +417,14 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
                     icon: const Icon(
                       Icons.directions_rounded,
                       size: 20,
-                      color: Colors.white,
+                      color: Color(0xFF166534),
                     ),
                     label: Text(
                       'View in Maps',
                       style: TextStyle(
                         fontSize: 13.sp,
                         fontWeight: FontWeight.w700,
+                        color: const Color(0xFF166534),
                       ),
                     ),
                   ),
@@ -573,7 +644,8 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
                 iconColor: const Color(0xFF1976D2),
                 iconBgColor: const Color(0xFFE3F2FD),
                 title: 'Call Us',
-                onTap: () => _makeCall('18001235678'),
+                subtitle: '+91 8111882244',
+                onTap: () => _makeCall('+918111882244'),
               ),
             ),
             SizedBox(width: 12.w),
@@ -583,6 +655,7 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
                 iconColor: const Color(0xFF2E7D32),
                 iconBgColor: const Color(0xFFE8F5E9),
                 title: 'Email Us',
+                subtitle: 'support@suchigo.com',
                 onTap: () => _sendEmail('support@suchigo.com'),
               ),
             ),
@@ -597,7 +670,8 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
                 iconColor: const Color(0xFF2E7D32),
                 iconBgColor: const Color(0xFFE8F5E9),
                 title: 'WhatsApp',
-                onTap: () => _openWhatsApp('917306929058'),
+                subtitle: '+91 8111882244',
+                onTap: () => _openWhatsApp('918111882244'),
               ),
             ),
             SizedBox(width: 12.w),
@@ -774,26 +848,20 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
         ),
         SizedBox(height: 12.h),
 
-        // Row of Name & Phone
-        Row(
-          children: [
-            Expanded(
-              child: _buildInputField(
-                controller: _nameController,
-                icon: Icons.person_outline_rounded,
-                hintText: 'Your Name',
-              ),
-            ),
-            SizedBox(width: 12.w),
-            Expanded(
-              child: _buildInputField(
-                controller: _phoneController,
-                icon: Icons.phone_outlined,
-                hintText: 'Phone',
-                keyboardType: TextInputType.phone,
-              ),
-            ),
-          ],
+        // Name field
+        _buildInputField(
+          controller: _nameController,
+          icon: Icons.person_outline_rounded,
+          hintText: 'Your Name',
+        ),
+        SizedBox(height: 12.h),
+
+        // Phone field
+        _buildInputField(
+          controller: _phoneController,
+          icon: Icons.phone_outlined,
+          hintText: 'Phone Number',
+          keyboardType: TextInputType.phone,
         ),
         SizedBox(height: 12.h),
 

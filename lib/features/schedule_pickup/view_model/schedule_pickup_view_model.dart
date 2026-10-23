@@ -45,10 +45,59 @@ class SchedulePickupViewModel extends ViewModel {
 
   PickupResponseModel? _createdPickup;
 
+  List<CalendarDateModel> _calendarDates = [];
+  bool _isLoadingCalendarDates = false;
+  int _calendarRequestId = 0;
+
   JurisdictionModel get jurisdiction => _jurisdiction;
   DateTime? get pickupDate => _pickupDate;
   PickupResponseModel? get createdPickup => _createdPickup;
   ProfileResponseModel? get userProfile => _userProfile;
+
+  /// All dates returned by the calendar-dates API for the selected local body.
+  List<CalendarDateModel> get calendarDates => _calendarDates;
+  bool get isLoadingCalendarDates => _isLoadingCalendarDates;
+
+  /// Calendar dates from today onwards (selectable pickup dates).
+  List<DateTime> get upcomingPickupDates {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    return _calendarDates
+        .map((c) => c.date)
+        .where((d) => !d.isBefore(today))
+        .toSet()
+        .toList()
+      ..sort();
+  }
+
+  bool isPickupDateAvailable(DateTime date) {
+    return _calendarDates.any((c) =>
+        c.date.year == date.year &&
+        c.date.month == date.month &&
+        c.date.day == date.day);
+  }
+
+  Future<void> loadCalendarDates(int localBodyId) async {
+    final requestId = ++_calendarRequestId;
+    _isLoadingCalendarDates = true;
+    _calendarDates = [];
+    notifyListeners();
+    final dates = await _repository.getCalendarDates(localBodyId);
+    if (requestId != _calendarRequestId) return; // stale response
+    _calendarDates = dates;
+    _isLoadingCalendarDates = false;
+    if (_pickupDate != null && !isPickupDateAvailable(_pickupDate!)) {
+      _pickupDate = null;
+    }
+    notifyListeners();
+  }
+
+  void _clearCalendarDates() {
+    _calendarRequestId++;
+    _calendarDates = [];
+    _isLoadingCalendarDates = false;
+    _pickupDate = null;
+  }
 
   Future<void> loadUserProfile() async {
     try {
@@ -155,6 +204,7 @@ class SchedulePickupViewModel extends ViewModel {
       clearWardNumber: true,
       clearRatePerKg: true,
     );
+    _clearCalendarDates();
     notifyListeners();
   }
 
@@ -168,9 +218,11 @@ class SchedulePickupViewModel extends ViewModel {
       clearWardNumber: true,
       ratePerKg: 40.00,
     );
+    _clearCalendarDates();
     notifyListeners();
     if (localBodyId != null && localBodyId > 0) {
       fetchAndApplyDisposalRate(localBodyId);
+      loadCalendarDates(localBodyId);
     }
   }
 

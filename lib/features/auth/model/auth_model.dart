@@ -39,12 +39,14 @@ class SendOTPResponseModel {
   final String? otp;
   final String? error;
   final bool isRegistered;
+  final bool canLogin;
 
   const SendOTPResponseModel({
     required this.message,
     this.otp,
     this.error,
     this.isRegistered = true,
+    this.canLogin = true,
   });
 
   factory SendOTPResponseModel.fromJson(Map<dynamic, dynamic> json) =>
@@ -55,6 +57,9 @@ class SendOTPResponseModel {
         isRegistered: json['is_registered'] == true ||
             json['is_registered']?.toString().toLowerCase() == 'true' ||
             (json['is_registered'] == null && !json.containsKey('error')),
+        canLogin: json['can_login'] == null ||
+            json['can_login'] == true ||
+            json['can_login']?.toString().toLowerCase() == 'true',
       );
 }
 

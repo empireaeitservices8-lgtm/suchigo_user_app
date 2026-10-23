@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
-import '../../model/auth_model.dart';
 import '../../view_model/auth_view_model.dart';
 import 'package:suchigo_user_app/widgets/app_button_widget.dart';
+import 'package:suchigo_user_app/widgets/custom_toast.dart';
 import '../complete_profile_screen.dart';
 
 class OTPVerificationSheet extends StatelessWidget {
@@ -153,7 +153,23 @@ class OTPVerificationSheet extends StatelessWidget {
             )
           else
             InkWell(
-              onTap: vm.isLoading ? null : () => vm.resendOTP(),
+              onTap: vm.isLoading
+                  ? null
+                  : () async {
+                      final success = await vm.resendOTP();
+                      if (!context.mounted) return;
+                      if (!success && vm.errorMessage != null) {
+                        CustomToast.show(
+                          context,
+                          message: vm.errorMessage!,
+                          bottomOffset:
+                              MediaQuery.of(context).viewInsets.bottom > 0
+                                  ? MediaQuery.of(context).viewInsets.bottom +
+                                      20.h
+                                  : null,
+                        );
+                      }
+                    },
               child: Text(
                 'Resend Code',
                 style: TextStyle(
@@ -175,7 +191,7 @@ class OTPVerificationSheet extends StatelessWidget {
               if (!context.mounted) return;
               if (success) {
                 Navigator.pop(context);
-                if (vm.mode == AuthMode.register) {
+                if (!vm.isRegistered) {
                   Navigator.pushNamed(
                     context,
                     CompleteProfileScreen.routeName,
@@ -187,32 +203,14 @@ class OTPVerificationSheet extends StatelessWidget {
                 } else {
                   onVerificationSuccess();
                 }
-              } else if (vm.isNotRegistered) {
-                vm.setMode(AuthMode.register);
-                final verifySuccess = await vm.verifyOTP();
-                if (!context.mounted) return;
-                if (verifySuccess) {
-                  Navigator.pop(context);
-                  Navigator.pushNamed(
-                    context,
-                    CompleteProfileScreen.routeName,
-                    arguments: CompleteProfileScreenArgs(
-                      phoneNumber: vm.fullPhoneNumber,
-                      otp: vm.otpCode,
-                    ),
-                  );
-                } else if (vm.errorMessage != null) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(vm.errorMessage!),
-                    ),
-                  );
-                }
               } else if (vm.errorMessage != null) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(vm.errorMessage!),
-                  ),
+                FocusScope.of(context).unfocus();
+                CustomToast.show(
+                  context,
+                  message: vm.errorMessage!,
+                  bottomOffset: MediaQuery.of(context).viewInsets.bottom > 0
+                      ? MediaQuery.of(context).viewInsets.bottom + 20.h
+                      : null,
                 );
               }
             },

@@ -23,6 +23,8 @@ abstract class SchedulePickupRepository {
       {Function(AppError error)? onError});
   Future<double?> getDisposalRateForLocalBody(int localBodyId,
       {Function(AppError error)? onError});
+  Future<List<CalendarDateModel>> getCalendarDates(int localBodyId,
+      {Function(AppError error)? onError});
   Future<ProfileResponseModel?> getUserProfile(
       {Function(AppError error)? onError});
   Future<PickupResponseModel?> submitPickupSchedule(
@@ -372,10 +374,54 @@ class SchedulePickupRepositoryImpl implements SchedulePickupRepository {
       );
       return match.ratePerKg;
     } catch (_) {
-      if (rates.isNotEmpty) {
-        return rates.first.ratePerKg;
-      }
       return 40.0;
+    }
+  }
+
+  @override
+  Future<List<CalendarDateModel>> getCalendarDates(int localBodyId,
+      {Function(AppError error)? onError}) async {
+    await _apiService.initTokenToHeader();
+    try {
+      final response = await _apiService.dio.get(
+        urlCalendarDates,
+        queryParameters: {'local_body_id': localBodyId},
+      );
+      List rawList = [];
+      if (response.data is List) {
+        rawList = response.data as List;
+      } else if (response.data is Map) {
+        final map = response.data as Map;
+        if (map['data'] is List) {
+          rawList = map['data'] as List;
+        } else if (map['results'] is List) {
+          rawList = map['results'] as List;
+        }
+      }
+
+      final dates = rawList
+          .whereType<Map>()
+          .map(CalendarDateModel.tryFromJson)
+          .whereType<CalendarDateModel>()
+          .toList()
+        ..sort((a, b) => a.date.compareTo(b.date));
+      return dates;
+    } on DioException catch (e) {
+      if (onError != null) {
+        final errorMsg = e.response?.data is Map
+            ? (e.response?.data['message']?.toString() ??
+                e.response?.data['error']?.toString())
+            : null;
+        onError(AppError(
+          message: errorMsg ?? e.message ?? 'Failed to load pickup dates',
+        ));
+      }
+      return [];
+    } catch (e) {
+      if (onError != null) {
+        onError(AppError(message: 'Failed to load pickup dates: $e'));
+      }
+      return [];
     }
   }
 

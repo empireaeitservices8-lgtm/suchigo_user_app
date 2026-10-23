@@ -76,7 +76,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           alignment: Alignment.topRight,
                           child: InkWell(
                             onTap: () {
-                              vm.skipToLast();
+                              vm.completeOnboarding(
+                                onComplete: () {
+                                  if (context.mounted) {
+                                    Navigator.pushReplacementNamed(
+                                      context,
+                                      AuthScreen.routeName,
+                                    );
+                                  }
+                                },
+                              );
                             },
                             borderRadius: BorderRadius.circular(20.r),
                             child: Container(

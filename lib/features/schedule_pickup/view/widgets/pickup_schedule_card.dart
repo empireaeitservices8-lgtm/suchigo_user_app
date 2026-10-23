@@ -98,24 +98,7 @@ class PickupScheduleCard extends StatelessWidget {
             ),
           ),
           SizedBox(height: 6.h),
-          Row(
-            children: [
-              Icon(
-                Icons.info_outline_rounded,
-                size: 13.sp,
-                color: const Color(0xFF166534),
-              ),
-              SizedBox(width: 4.w),
-              Text(
-                'Pickups are scheduled on Fridays & Mondays only',
-                style: TextStyle(
-                  fontSize: 11.5.sp,
-                  fontWeight: FontWeight.w500,
-                  color: const Color(0xFF166534),
-                ),
-              ),
-            ],
-          ),
+
           SizedBox(height: 16.h),
 
           // Number of Bags Field

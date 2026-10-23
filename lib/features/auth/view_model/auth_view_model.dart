@@ -16,6 +16,7 @@ class AuthViewModel extends ViewModel {
   AuthMode _mode = AuthMode.login;
   bool _isPhoneValid = false;
   bool _isNotRegistered = false;
+  bool _isRegistered = true;
   int _resendCountdown = 57;
   Timer? _countdownTimer;
   String? _errorMessage;
@@ -29,6 +30,7 @@ class AuthViewModel extends ViewModel {
   AuthMode get mode => _mode;
   bool get isPhoneValid => _isPhoneValid;
   bool get isNotRegistered => _isNotRegistered;
+  bool get isRegistered => _isRegistered;
   int get resendCountdown => _resendCountdown;
   String get phoneNumber => phoneController.text.trim();
   String get fullPhoneNumber => '+91${phoneController.text.trim()}';
@@ -68,12 +70,14 @@ class AuthViewModel extends ViewModel {
       final msg = errorPayload.message.toLowerCase();
       if (msg.contains('register') || msg.contains('not found') || msg.contains('no account')) {
         _isNotRegistered = true;
+        _isRegistered = false;
       }
       if (errorPayload.response is Map) {
         final map = errorPayload.response as Map;
         if (map['is_registered'] == false ||
             map['is_registered']?.toString().toLowerCase() == 'false') {
           _isNotRegistered = true;
+          _isRegistered = false;
         }
       }
     }
@@ -121,19 +125,23 @@ class AuthViewModel extends ViewModel {
         if (!response.isRegistered ||
             response.error!.toLowerCase().contains('register')) {
           _isNotRegistered = true;
+          _isRegistered = false;
         }
         return false;
       }
-      if (!response.isRegistered) {
-        _isNotRegistered = true;
-        _errorMessage = response.message.isNotEmpty
-            ? response.message
-            : 'No account found with this phone number. Please register first.';
-        return false;
+
+      _isRegistered = response.isRegistered;
+      _isNotRegistered = !response.isRegistered;
+      if (!_isRegistered) {
+        _mode = AuthMode.register;
+      } else {
+        _mode = AuthMode.login;
       }
+
       _sentOtp = response.otp;
       startResendTimer();
       _clearOtpFields();
+      notifyListeners();
       return true;
     } catch (e) {
       _errorMessage ??= 'Failed to send OTP. Please try again.';
@@ -146,10 +154,9 @@ class AuthViewModel extends ViewModel {
   Future<bool> verifyOTP() async {
     if (!isOtpComplete) return false;
     _errorMessage = null;
-    _isNotRegistered = false;
     isLoading = true;
     try {
-      if (_mode == AuthMode.login) {
+      if (_isRegistered) {
         final result = await _repository.login(
           LoginRequestModel(
             phoneNumber: fullPhoneNumber,
@@ -165,17 +172,22 @@ class AuthViewModel extends ViewModel {
           if (!result.isRegistered ||
               result.error!.toLowerCase().contains('register')) {
             _isNotRegistered = true;
+            _isRegistered = false;
+            _mode = AuthMode.register;
           }
           return false;
         }
         if (!result.isRegistered) {
           _isNotRegistered = true;
+          _isRegistered = false;
+          _mode = AuthMode.register;
           _errorMessage = result.message ??
               'No account found with this phone number. Please register first.';
           return false;
         }
         if (!result.canAccessApp) {
-          _errorMessage = result.message ?? 'Access denied. Your account is not authorized to access this app.';
+          _errorMessage = result.message ??
+              'Access denied. Your account is not authorized to access this app.';
           return false;
         }
         if (!result.hasToken && _errorMessage == null) {
@@ -210,7 +222,6 @@ class AuthViewModel extends ViewModel {
   Future<bool> resendOTP() async {
     if (_resendCountdown > 0) return false;
     _errorMessage = null;
-    _isNotRegistered = false;
     isLoading = true;
     try {
       final response = await _repository.resendOTP(
@@ -225,18 +236,15 @@ class AuthViewModel extends ViewModel {
         if (!response.isRegistered ||
             response.error!.toLowerCase().contains('register')) {
           _isNotRegistered = true;
+          _isRegistered = false;
         }
         return false;
       }
-      if (!response.isRegistered) {
-        _isNotRegistered = true;
-        _errorMessage = response.message.isNotEmpty
-            ? response.message
-            : 'No account found with this phone number. Please register first.';
-        return false;
-      }
+      _isRegistered = response.isRegistered;
+      _isNotRegistered = !response.isRegistered;
       _sentOtp = response.otp;
       startResendTimer();
+      notifyListeners();
       return true;
     } catch (e) {
       _errorMessage ??= 'Failed to resend OTP. Please try again.';
