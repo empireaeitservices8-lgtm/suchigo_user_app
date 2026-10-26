@@ -523,13 +523,14 @@ class _SchedulePickupScreenState extends State<SchedulePickupScreen> {
                           );
                           rate = match.ratePerKg;
                         } catch (_) {}
-                        final displayRate = rate != null
-                            ? '₹${rate.toStringAsFixed(2)} / kg'
-                            : '₹40.00 / kg';
+                        // final displayRate = rate != null
+                        //     ? '₹${rate.toStringAsFixed(2)} / kg'
+                        //     : '₹40.00 / kg';
                         return JurisdictionOption(
                           id: lb.id,
                           title: lb.name,
-                          subtitle: 'Rate: $displayRate',
+                          subtitle: "",
+                          // subtitle: 'Rate: $displayRate',
                           data: lb,
                         );
                       }).toList();
