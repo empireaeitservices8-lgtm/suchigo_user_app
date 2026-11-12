@@ -97,6 +97,9 @@ class OTPVerificationModel {
   final String? token;
   final String? phoneNumber;
   final String? otp;
+  final bool isRegistered;
+  final bool needsRegistration;
+  final bool canLogin;
 
   const OTPVerificationModel({
     this.message = '',
@@ -105,20 +108,44 @@ class OTPVerificationModel {
     this.token,
     this.phoneNumber,
     this.otp,
+    this.isRegistered = true,
+    this.needsRegistration = false,
+    this.canLogin = true,
   });
 
-  factory OTPVerificationModel.fromJson(Map<dynamic, dynamic> json) =>
-      OTPVerificationModel(
-        message: json['message']?.toString() ?? json['error']?.toString() ?? '',
-        error: json['error']?.toString(),
-        token: json['token']?.toString(),
-        phoneNumber: json['phone_number']?.toString(),
-        otp: json['otp']?.toString(),
-        isVerified: json['error'] == null &&
-            (json['message']?.toString().toLowerCase().contains('success') == true ||
-                json['is_verified'] == true ||
-                (json['message'] != null && json['message'].toString().isNotEmpty)),
-      );
+  bool get shouldRegister => needsRegistration || !isRegistered;
+  bool get isUserRegistered => isRegistered && !needsRegistration;
+
+  factory OTPVerificationModel.fromJson(Map<dynamic, dynamic> json) {
+    final bool isReg = json['is_registered'] == true ||
+        json['is_registered']?.toString().toLowerCase() == 'true';
+    final bool needsReg = json['needs_registration'] == true ||
+        json['needs_registration']?.toString().toLowerCase() == 'true';
+    final bool canLog = json['can_login'] == null ||
+        json['can_login'] == true ||
+        json['can_login']?.toString().toLowerCase() == 'true';
+
+    // When needs_registration is explicitly true or is_registered is explicitly false
+    final bool finalIsRegistered = !needsReg &&
+        (isReg || (json['is_registered'] == null && !json.containsKey('error')));
+
+    return OTPVerificationModel(
+      message: json['message']?.toString() ?? json['error']?.toString() ?? '',
+      error: json['error']?.toString(),
+      token: json['token']?.toString(),
+      phoneNumber: json['phone_number']?.toString(),
+      otp: json['otp']?.toString(),
+      isRegistered: finalIsRegistered,
+      needsRegistration: needsReg || !finalIsRegistered,
+      canLogin: canLog,
+      isVerified: json['error'] == null &&
+          (json['message']?.toString().toLowerCase().contains('success') ==
+                  true ||
+              json['is_verified'] == true ||
+              (json['message'] != null &&
+                  json['message'].toString().isNotEmpty)),
+    );
+  }
 }
 
 class LoginRequestModel {

@@ -407,17 +407,17 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
     final initialLetter =
         _userName.isNotEmpty ? _userName[0].toUpperCase() : 'U';
 
-    String? genderSymbol;
-    if (_gender != null && _gender!.trim().isNotEmpty) {
-      final g = _gender!.trim().toLowerCase();
-      if (g.contains('fem') || g == 'f') {
-        genderSymbol = '♀';
-      } else if (g.contains('mal') || g == 'm') {
-        genderSymbol = '♂';
-      } else {
-        genderSymbol = _gender;
-      }
-    }
+    // String? genderSymbol;
+    // if (_gender != null && _gender!.trim().isNotEmpty) {
+    //   final g = _gender!.trim().toLowerCase();
+    //   if (g.contains('fem') || g == 'f') {
+    //     genderSymbol = '♀';
+    //   } else if (g.contains('mal') || g == 'm') {
+    //     genderSymbol = '♂';
+    //   } else {
+    //     genderSymbol = _gender;
+    //   }
+    // }
 
     return Column(
       children: [
@@ -462,17 +462,17 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
             color: const Color(0xFF1E293B),
           ),
         ),
-        if (genderSymbol != null) ...[
-          SizedBox(height: 4.h),
-          Text(
-            genderSymbol,
-            style: TextStyle(
-              fontSize: 20.sp,
-              fontWeight: FontWeight.w800,
-              color: const Color(0xFF166534),
-            ),
-          ),
-        ],
+        // if (genderSymbol != null) ...[
+        //   SizedBox(height: 4.h),
+        //   Text(
+        //     genderSymbol,
+        //     style: TextStyle(
+        //       fontSize: 20.sp,
+        //       fontWeight: FontWeight.w800,
+        //       color: const Color(0xFF166534),
+        //     ),
+        //   ),
+        // ],
       ],
     );
   }

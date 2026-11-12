@@ -188,7 +188,10 @@ class AppButton extends StatelessWidget {
     VoidCallback? onPressed,
     bool isLoading = false,
     bool isEnabled = true,
+    Color? backgroundColor,
+    Color? disabledBackgroundColor,
     Color? textColor,
+    Color? disabledTextColor,
     TextStyle? textStyle,
     double? fontSize,
     FontWeight? fontWeight,
@@ -207,7 +210,10 @@ class AppButton extends StatelessWidget {
       onTap: onTap ?? onPressed,
       isLoading: isLoading,
       isEnabled: isEnabled,
+      backgroundColor: backgroundColor,
+      disabledBackgroundColor: disabledBackgroundColor,
       textColor: textColor ?? Colors.white,
+      disabledTextColor: disabledTextColor,
       textStyle: textStyle,
       fontSize: fontSize,
       fontWeight: fontWeight,
@@ -227,9 +233,9 @@ class AppButton extends StatelessWidget {
     final bool canTap = isEnabled && !isLoading && effectiveOnTap != null;
 
     final Color defaultBg = const Color(0xFF166534);
-    final Color defaultDisabledBg = const Color(0xFFE2E8F0);
+    final Color defaultDisabledBg = const Color(0xFFCBD5E1);
     final Color defaultText = Colors.white;
-    final Color defaultDisabledText = const Color(0xFF94A3B8);
+    final Color defaultDisabledText = const Color(0xFF64748B);
 
     final Color effectiveBg = isEnabled
         ? (backgroundColor ?? defaultBg)
@@ -267,7 +273,7 @@ class AppButton extends StatelessWidget {
           height: height ?? 52.h,
           padding: padding ?? EdgeInsets.symmetric(horizontal: 16.w),
           decoration: BoxDecoration(
-            color: gradient == null ? effectiveBg : null,
+            color: (!isEnabled || gradient == null) ? effectiveBg : null,
             gradient: isEnabled ? gradient : null,
             borderRadius: BorderRadius.circular(effectiveRadius),
             border: border,

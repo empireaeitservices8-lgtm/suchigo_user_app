@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:suchigo_user_app/models/app_error_model.dart';
 import 'package:suchigo_user_app/providers/view_model.dart';
 import '../model/auth_model.dart';
 import '../repo/auth_repo.dart';
@@ -65,24 +64,6 @@ class AuthViewModel extends ViewModel {
     }
   }
 
-  void _checkIfUnregistered(dynamic errorPayload) {
-    if (errorPayload is AppError) {
-      final msg = errorPayload.message.toLowerCase();
-      if (msg.contains('register') || msg.contains('not found') || msg.contains('no account')) {
-        _isNotRegistered = true;
-        _isRegistered = false;
-      }
-      if (errorPayload.response is Map) {
-        final map = errorPayload.response as Map;
-        if (map['is_registered'] == false ||
-            map['is_registered']?.toString().toLowerCase() == 'false') {
-          _isNotRegistered = true;
-          _isRegistered = false;
-        }
-      }
-    }
-  }
-
   void _onPhoneChanged() {
     final text = phoneController.text.trim();
     final isValid = text.length == 10 && RegExp(r'^[0-9]+$').hasMatch(text);
@@ -117,25 +98,11 @@ class AuthViewModel extends ViewModel {
         _authRequest,
         onError: (error) {
           _errorMessage = error.message;
-          _checkIfUnregistered(error);
         },
       );
       if (response.error != null && response.error!.isNotEmpty) {
         _errorMessage = response.error;
-        if (!response.isRegistered ||
-            response.error!.toLowerCase().contains('register')) {
-          _isNotRegistered = true;
-          _isRegistered = false;
-        }
         return false;
-      }
-
-      _isRegistered = response.isRegistered;
-      _isNotRegistered = !response.isRegistered;
-      if (!_isRegistered) {
-        _mode = AuthMode.register;
-      } else {
-        _mode = AuthMode.login;
       }
 
       _sentOtp = response.otp;
@@ -156,63 +123,64 @@ class AuthViewModel extends ViewModel {
     _errorMessage = null;
     isLoading = true;
     try {
-      if (_isRegistered) {
-        final result = await _repository.login(
+      final verifyResult = await _repository.verifyOTP(
+        VerifyOTPRequestModel(
+          phoneNumber: fullPhoneNumber,
+          otp: otpCode,
+        ),
+        onError: (error) {
+          _errorMessage = 'OTP is invalid';
+        },
+      );
+
+      if (verifyResult.error != null && verifyResult.error!.isNotEmpty) {
+        _errorMessage = 'OTP is invalid';
+        return false;
+      }
+
+      if (!verifyResult.isVerified) {
+        _errorMessage = 'OTP is invalid';
+        return false;
+      }
+
+      // Check whether user needs registration or is already registered
+      if (verifyResult.shouldRegister) {
+        _isRegistered = false;
+        _isNotRegistered = true;
+        _mode = AuthMode.register;
+        notifyListeners();
+        return true;
+      } else {
+        _isRegistered = true;
+        _isNotRegistered = false;
+        _mode = AuthMode.login;
+
+        if (verifyResult.token != null && verifyResult.token!.isNotEmpty) {
+          notifyListeners();
+          return true;
+        }
+
+        // Call login endpoint to obtain auth token and save session
+        final loginResult = await _repository.login(
           LoginRequestModel(
             phoneNumber: fullPhoneNumber,
             otp: otpCode,
           ),
           onError: (error) {
-            _errorMessage = error.message;
-            _checkIfUnregistered(error);
+            _errorMessage = 'OTP is invalid';
           },
         );
-        if (result.error != null && result.error!.isNotEmpty) {
-          _errorMessage = result.error;
-          if (!result.isRegistered ||
-              result.error!.toLowerCase().contains('register')) {
-            _isNotRegistered = true;
-            _isRegistered = false;
-            _mode = AuthMode.register;
-          }
+
+        if (loginResult.hasToken) {
+          notifyListeners();
+          return true;
+        } else {
+          _errorMessage = 'OTP is invalid';
           return false;
         }
-        if (!result.isRegistered) {
-          _isNotRegistered = true;
-          _isRegistered = false;
-          _mode = AuthMode.register;
-          _errorMessage = result.message ??
-              'No account found with this phone number. Please register first.';
-          return false;
-        }
-        if (!result.canAccessApp) {
-          _errorMessage = result.message ??
-              'Access denied. Your account is not authorized to access this app.';
-          return false;
-        }
-        if (!result.hasToken && _errorMessage == null) {
-          _errorMessage = result.message ?? 'Login failed. Please try again.';
-        }
-        return result.hasToken;
-      } else {
-        final result = await _repository.verifyOTP(
-          VerifyOTPRequestModel(
-            phoneNumber: fullPhoneNumber,
-            otp: otpCode,
-          ),
-          onError: (error) {
-            _errorMessage = error.message;
-            _checkIfUnregistered(error);
-          },
-        );
-        if (result.error != null && result.error!.isNotEmpty) {
-          _errorMessage = result.error;
-          return false;
-        }
-        return result.isVerified;
       }
     } catch (e) {
-      _errorMessage ??= 'Verification failed. Please try again.';
+      _errorMessage = 'OTP is invalid';
       return false;
     } finally {
       isLoading = false;
@@ -228,20 +196,12 @@ class AuthViewModel extends ViewModel {
         _authRequest,
         onError: (error) {
           _errorMessage = error.message;
-          _checkIfUnregistered(error);
         },
       );
       if (response.error != null && response.error!.isNotEmpty) {
         _errorMessage = response.error;
-        if (!response.isRegistered ||
-            response.error!.toLowerCase().contains('register')) {
-          _isNotRegistered = true;
-          _isRegistered = false;
-        }
         return false;
       }
-      _isRegistered = response.isRegistered;
-      _isNotRegistered = !response.isRegistered;
       _sentOtp = response.otp;
       startResendTimer();
       notifyListeners();

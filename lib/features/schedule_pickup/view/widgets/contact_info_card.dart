@@ -5,12 +5,16 @@ class ContactInfoCard extends StatelessWidget {
   final TextEditingController fullNameController;
   final TextEditingController contactNumberController;
   final TextEditingController emailController;
+  final bool isNameReadOnly;
+  final bool isPhoneReadOnly;
 
   const ContactInfoCard({
     super.key,
     required this.fullNameController,
     required this.contactNumberController,
     required this.emailController,
+    this.isNameReadOnly = true,
+    this.isPhoneReadOnly = true,
   });
 
   @override
@@ -59,6 +63,7 @@ class ContactInfoCard extends StatelessWidget {
           _buildInputField(
             controller: fullNameController,
             hint: 'Enter your full name',
+            readOnly: isNameReadOnly,
           ),
           SizedBox(height: 16.h),
 
@@ -69,6 +74,7 @@ class ContactInfoCard extends StatelessWidget {
             controller: contactNumberController,
             hint: 'Enter contact number',
             keyboardType: TextInputType.phone,
+            readOnly: isPhoneReadOnly,
           ),
           SizedBox(height: 16.h),
 
@@ -79,6 +85,7 @@ class ContactInfoCard extends StatelessWidget {
             controller: emailController,
             hint: 'Enter your email address',
             keyboardType: TextInputType.emailAddress,
+            readOnly: false,
           ),
         ],
       ),
@@ -115,10 +122,11 @@ class ContactInfoCard extends StatelessWidget {
     required TextEditingController controller,
     required String hint,
     TextInputType keyboardType = TextInputType.text,
+    bool readOnly = false,
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: readOnly ? const Color(0xFFF1F5F9) : Colors.white,
         borderRadius: BorderRadius.circular(14.r),
         border: Border.all(
           color: const Color(0xFFE2E8F0),
@@ -127,11 +135,12 @@ class ContactInfoCard extends StatelessWidget {
       ),
       child: TextField(
         controller: controller,
+        readOnly: readOnly,
         keyboardType: keyboardType,
         style: TextStyle(
           fontSize: 14.sp,
           fontWeight: FontWeight.w600,
-          color: const Color(0xFF1E293B),
+          color: readOnly ? const Color(0xFF475569) : const Color(0xFF1E293B),
         ),
         decoration: InputDecoration(
           hintText: hint,
@@ -140,6 +149,13 @@ class ContactInfoCard extends StatelessWidget {
             fontWeight: FontWeight.w400,
             color: const Color(0xFFB0BEC5),
           ),
+          suffixIcon: readOnly
+              ? const Icon(
+                  Icons.lock_outline_rounded,
+                  size: 18,
+                  color: Color(0xFF94A3B8),
+                )
+              : null,
           filled: false,
           fillColor: Colors.transparent,
           contentPadding: EdgeInsets.symmetric(

@@ -190,53 +190,61 @@ class _BookingConfirmedScreenState extends State<BookingConfirmedScreen> {
                 ),
 
                 // Floating Toast Banner: "Pickup scheduled successfully!"
-                if (vm.isToastVisible)
-                  Positioned(
-                    bottom: 74.h,
-                    left: 16.w,
-                    right: 16.w,
-                    child: GestureDetector(
-                      onTap: vm.hideToast,
-                      child: Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 16.w,
-                          vertical: 12.h,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF1B5E20).withValues(alpha: 0.95),
-                          borderRadius: BorderRadius.circular(12.r),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.15),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          children: [
-                            Text(
-                              'Pickup scheduled successfully!',
-                              style: TextStyle(
-                                fontSize: 13.5.sp,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.white,
+                Positioned(
+                  bottom: 74.h,
+                  left: 16.w,
+                  right: 16.w,
+                  child: AnimatedOpacity(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                    opacity: vm.isToastVisible ? 1.0 : 0.0,
+                    child: IgnorePointer(
+                      ignoring: !vm.isToastVisible,
+                      child: GestureDetector(
+                        onTap: vm.hideToast,
+                        child: Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 16.w,
+                            vertical: 12.h,
+                          ),
+                          decoration: BoxDecoration(
+                            color:
+                                const Color(0xFF1B5E20).withValues(alpha: 0.95),
+                            borderRadius: BorderRadius.circular(12.r),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.15),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
                               ),
-                            ),
-                            const Spacer(),
-                            InkWell(
-                              onTap: vm.hideToast,
-                              child: const Icon(
-                                Icons.close_rounded,
-                                color: Colors.white70,
-                                size: 18,
+                            ],
+                          ),
+                          child: Row(
+                            children: [
+                              Text(
+                                'Pickup scheduled successfully!',
+                                style: TextStyle(
+                                  fontSize: 13.5.sp,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.white,
+                                ),
                               ),
-                            ),
-                          ],
+                              const Spacer(),
+                              InkWell(
+                                onTap: vm.hideToast,
+                                child: const Icon(
+                                  Icons.close_rounded,
+                                  color: Colors.white70,
+                                  size: 18,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
                   ),
+                ),
               ],
             );
           },

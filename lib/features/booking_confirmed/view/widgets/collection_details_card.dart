@@ -82,11 +82,11 @@ class CollectionDetailsCard extends StatelessWidget {
           SizedBox(height: 12.h),
 
           // Est. Weight Row
-          _buildDetailRow(
-            icon: Icons.scale_outlined,
-            label: 'Est. Weight',
-            value: estWeight,
-          ),
+          // _buildDetailRow(
+          //   icon: Icons.scale_outlined,
+          //   label: 'Est. Weight',
+          //   value: estWeight,
+          // ),
         ],
       ),
     );

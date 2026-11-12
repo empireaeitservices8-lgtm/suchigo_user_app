@@ -374,7 +374,7 @@ class SchedulePickupRepositoryImpl implements SchedulePickupRepository {
       );
       return match.ratePerKg;
     } catch (_) {
-      return 40.0;
+      return 0.00;
     }
   }
 

@@ -272,6 +272,9 @@ class _SchedulePickupScreenState extends State<SchedulePickupScreen> {
                           height: 54.h,
                           borderRadius: 28.r,
                           isLoading: vm.isLoading,
+                          isEnabled: vm.isFormValid,
+                          disabledBackgroundColor: const Color(0xFFD1D5DB),
+                          disabledTextColor: const Color(0xFF6B7280),
                           gradient: const LinearGradient(
                             colors: [
                               Color(0xFF26A69A),
@@ -290,7 +293,9 @@ class _SchedulePickupScreenState extends State<SchedulePickupScreen> {
                           textStyle: TextStyle(
                             fontSize: 16.sp,
                             fontWeight: FontWeight.w800,
-                            color: Colors.white,
+                            color: vm.isFormValid
+                                ? Colors.white
+                                : const Color(0xFF6B7280),
                             letterSpacing: 1.0,
                           ),
                           onTap: () async {
@@ -325,7 +330,7 @@ class _SchedulePickupScreenState extends State<SchedulePickupScreen> {
                                         .format(vm.pickupDate!)
                                     : (pickup?.pickupDate.isNotEmpty == true
                                         ? pickup!.pickupDate
-                                        : 'Friday, 2 Oct 2026'),
+                                        : ''),
                                 estWeight:
                                     '${(int.tryParse(vm.bagsCountController.text) ?? 1) * 2.5} kg',
                                 contactName: pickup?.fullName.isNotEmpty == true
@@ -351,12 +356,12 @@ class _SchedulePickupScreenState extends State<SchedulePickupScreen> {
                                             .isNotEmpty
                                         ? '${vm.pickupAddressController.text.trim()}, ${vm.jurisdiction.district != "Not Selected" ? vm.jurisdiction.district : ""} - ${vm.zipCodeController.text.trim().isNotEmpty ? vm.zipCodeController.text.trim() : ""}'
                                         : ''),
-                                co2Saved: '2.4 kg',
-                                recycledPercent: '85%',
-                                treesEquiv: '0.3',
+                                co2Saved: '0.0 kg',
+                                recycledPercent: '0%',
+                                treesEquiv: '0.0',
                                 standardRate: vm.jurisdiction.ratePerKg != null
                                     ? '₹${vm.jurisdiction.ratePerKg!.toStringAsFixed(2)}/kg'
-                                    : '₹40.00/kg',
+                                    : '₹0.00/kg',
                               );
 
                               Navigator.pushReplacementNamed(
@@ -482,7 +487,7 @@ class _SchedulePickupScreenState extends State<SchedulePickupScreen> {
                       final list = await _repository.getDistrictsList(
                         state: vm.jurisdiction.state.isNotEmpty
                             ? vm.jurisdiction.state
-                            : 'Kerala',
+                            : '',
                       );
                       return list
                           .map((d) => JurisdictionOption(
@@ -514,23 +519,11 @@ class _SchedulePickupScreenState extends State<SchedulePickupScreen> {
                         districtId: vm.jurisdiction.districtId,
                         district: vm.jurisdiction.district,
                       );
-                      final rates = await _repository.getDisposalRates();
                       return list.map((lb) {
-                        double? rate;
-                        try {
-                          final match = rates.firstWhere(
-                            (r) => r.localBodyId == lb.id,
-                          );
-                          rate = match.ratePerKg;
-                        } catch (_) {}
-                        // final displayRate = rate != null
-                        //     ? '₹${rate.toStringAsFixed(2)} / kg'
-                        //     : '₹40.00 / kg';
                         return JurisdictionOption(
                           id: lb.id,
                           title: lb.name,
                           subtitle: "",
-                          // subtitle: 'Rate: $displayRate',
                           data: lb,
                         );
                       }).toList();

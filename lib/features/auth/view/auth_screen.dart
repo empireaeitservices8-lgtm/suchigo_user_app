@@ -4,7 +4,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import 'package:suchigo_user_app/features/home/view/home_screen.dart';
 import 'package:suchigo_user_app/features/onboarding/view/widgets/suchigo_logo_widget.dart';
-import '../model/auth_model.dart';
 import '../view_model/auth_view_model.dart';
 import 'package:suchigo_user_app/widgets/app_button_widget.dart';
 import 'package:suchigo_user_app/widgets/custom_toast.dart';
@@ -29,8 +28,8 @@ class _AuthScreenState extends State<AuthScreen> {
     _viewModel = AuthViewModel();
   }
 
-  void _showOTPBottomSheet() {
-    showModalBottomSheet(
+  void _showOTPBottomSheet() async {
+    final verified = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -38,26 +37,34 @@ class _AuthScreenState extends State<AuthScreen> {
         value: _viewModel,
         child: OTPVerificationSheet(
           onVerificationSuccess: () {
-            if (!_viewModel.isRegistered) {
-              Navigator.pushNamed(
-                context,
-                CompleteProfileScreen.routeName,
-                arguments: CompleteProfileScreenArgs(
-                  phoneNumber: _viewModel.fullPhoneNumber,
-                  otp: _viewModel.otpCode,
-                ),
-              );
-            } else {
-              Navigator.pushNamedAndRemoveUntil(
-                context,
-                HomeScreen.routeName,
-                (route) => false,
-              );
-            }
+            Navigator.pop(sheetContext, true);
           },
         ),
       ),
     );
+
+    if (!mounted || verified != true) return;
+
+    if (!_viewModel.isRegistered) {
+      CustomToast.show(
+        context,
+        message: 'Please complete your profile to register.',
+      );
+      Navigator.pushNamed(
+        context,
+        CompleteProfileScreen.routeName,
+        arguments: CompleteProfileScreenArgs(
+          phoneNumber: _viewModel.fullPhoneNumber,
+          otp: _viewModel.otpCode,
+        ),
+      );
+    } else {
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        HomeScreen.routeName,
+        (route) => false,
+      );
+    }
   }
 
   @override
@@ -68,8 +75,6 @@ class _AuthScreenState extends State<AuthScreen> {
         backgroundColor: const Color(0xFFF1F8F4),
         body: Consumer<AuthViewModel>(
           builder: (context, vm, child) {
-            final isRegister = vm.mode == AuthMode.register;
-
             return SafeArea(
               child: SingleChildScrollView(
                 padding: EdgeInsets.symmetric(horizontal: 24.w),
@@ -86,7 +91,8 @@ class _AuthScreenState extends State<AuthScreen> {
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF166534).withValues(alpha: 0.08),
+                            color:
+                                const Color(0xFF166534).withValues(alpha: 0.08),
                             blurRadius: 24,
                             offset: const Offset(0, 8),
                           ),
@@ -125,7 +131,7 @@ class _AuthScreenState extends State<AuthScreen> {
                         children: [
                           // Heading
                           Text(
-                            isRegister ? 'Get Started' : 'Welcome Back',
+                            'Enter Mobile Number',
                             style: TextStyle(
                               fontSize: 26.sp,
                               fontWeight: FontWeight.w800,
@@ -136,9 +142,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
                           // Subtitle
                           Text(
-                            isRegister
-                                ? 'Create an account to begin your journey'
-                                : 'Sign in to access your account',
+                            'Enter your phone number to get started. We will send an OTP to verify.',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 14.sp,
@@ -252,31 +256,22 @@ class _AuthScreenState extends State<AuthScreen> {
                           ),
                           SizedBox(height: 24.h),
 
-                          // Footer Mode Toggle
+                          // Security and Terms Footer
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Text(
-                                isRegister
-                                    ? 'Existing user? '
-                                    : 'New user? ',
-                                style: TextStyle(
-                                  fontSize: 14.sp,
-                                  fontWeight: FontWeight.w400,
-                                  color: const Color(0xFF64748B),
-                                ),
+                              const Icon(
+                                Icons.shield_outlined,
+                                size: 16,
+                                color: Color(0xFF166534),
                               ),
-                              InkWell(
-                                onTap: () {
-                                  vm.toggleMode();
-                                },
-                                child: Text(
-                                  isRegister ? 'Login' : 'Get Started',
-                                  style: TextStyle(
-                                    fontSize: 14.sp,
-                                    fontWeight: FontWeight.w700,
-                                    color: const Color(0xFF166534),
-                                  ),
+                              SizedBox(width: 6.w),
+                              Text(
+                                'Fast & secure verification via OTP',
+                                style: TextStyle(
+                                  fontSize: 13.sp,
+                                  fontWeight: FontWeight.w500,
+                                  color: const Color(0xFF64748B),
                                 ),
                               ),
                             ],

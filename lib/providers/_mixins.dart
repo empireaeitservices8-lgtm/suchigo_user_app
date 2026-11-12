@@ -99,6 +99,13 @@ mixin MixinAPIProvider {
         if ((ex.data != null)) {
           if (ex.data is Map) {
             final data = ex.data as Map;
+            if (data.containsKey('otp')) {
+              onShowError(AppError(
+                message: 'OTP is invalid',
+                response: ex,
+              ));
+              break;
+            }
             if (data.keys.contains("message") &&
                 [
                   "invalid session",
@@ -115,8 +122,11 @@ mixin MixinAPIProvider {
             }
           }
         }
+        final effectiveMsg = (ex.message.isNotEmpty && ex.message != 'null')
+            ? ex.message
+            : (ex.toStringOtherData() ?? ex.message);
         onShowError(AppError(
-            message: ex.toStringOtherData() ?? ex.message, response: ex));
+            message: effectiveMsg, response: ex));
 
         break;
       case EnumAPIExceptions.httpStatusError:
@@ -126,6 +136,10 @@ mixin MixinAPIProvider {
             orElse: () => null,
           ) as Map?;
           if (res != null) {
+            if (res.containsKey('otp')) {
+              onShowError(AppError(message: 'OTP is invalid', response: ex));
+              break;
+            }
             if (res.containsKey('error') && res['error'] != null) {
               onShowError(
                   AppError(message: res['error'].toString(), response: ex));

@@ -17,14 +17,13 @@ class BookingConfirmedModel {
     this.status = 'Confirmed',
     this.wasteType = '1',
     this.collectionDate = 'Friday, 2 Oct 2026',
-    this.estWeight = '2.5 kg',
+    this.estWeight = '0.0 kg',
     this.contactName = 'aslam',
     this.contactPhone = '+917306929058',
-    this.pickupAddress =
-        '9F, Kakkanad, Keralam, 682303,\nIndia,\nErnakulam – 682303',
-    this.co2Saved = '2.4 kg',
-    this.recycledPercent = '85%',
+    this.pickupAddress = '',
+    this.co2Saved = '0.0kg',
+    this.recycledPercent = '0%',
     this.treesEquiv = '0.3',
-    this.standardRate = '₹40.00/kg',
+    this.standardRate = '₹0.00/kg',
   });
 }

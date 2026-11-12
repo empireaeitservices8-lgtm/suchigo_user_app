@@ -74,7 +74,7 @@ class AuthRepositoryImpl implements AuthRepository {
     VerifyOTPRequestModel request, {
     Function(AppError error)? onError,
   }) async {
-    return _apiService.executeAPI<OTPVerificationModel>(
+    final response = await _apiService.executeAPI<OTPVerificationModel>(
       methodToCall: _apiService.dio.post(
         urlVerifyOTP,
         data: request.toJson(),
@@ -82,6 +82,19 @@ class AuthRepositoryImpl implements AuthRepository {
       converter: OTPVerificationModel.fromJson,
       onError: onError,
     );
+    if (response.token != null && response.token!.isNotEmpty) {
+      await _saveVerifySession(response);
+    }
+    return response;
+  }
+
+  Future<void> _saveVerifySession(OTPVerificationModel model) async {
+    if (model.token != null && model.token!.isNotEmpty) {
+      await SpHelper.saveString(sp_keys.keyToken, model.token!);
+    }
+    if (model.phoneNumber != null && model.phoneNumber!.isNotEmpty) {
+      await SpHelper.saveString(sp_keys.keyUseMobile, model.phoneNumber!);
+    }
   }
 
   @override

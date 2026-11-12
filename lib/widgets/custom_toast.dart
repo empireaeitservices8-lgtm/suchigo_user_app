@@ -17,15 +17,17 @@ class CustomToast {
     double? bottomOffset,
     Duration duration = const Duration(milliseconds: 3000),
   }) {
+    // Show native system toast as a reliable guarantee
+    Fluttertoast.showToast(
+      msg: message,
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.BOTTOM,
+      backgroundColor: backgroundColor,
+      textColor: Colors.white,
+    );
+
     final ctx = context ?? AppConfig.navKey.currentContext;
     if (ctx == null) {
-      Fluttertoast.showToast(
-        msg: message,
-        toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.BOTTOM,
-        backgroundColor: backgroundColor,
-        textColor: Colors.white,
-      );
       return;
     }
 

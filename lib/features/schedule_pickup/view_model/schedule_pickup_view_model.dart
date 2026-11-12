@@ -10,8 +10,7 @@ class SchedulePickupViewModel extends ViewModel {
   final SchedulePickupRepository _repository;
 
   final TextEditingController fullNameController = TextEditingController();
-  final TextEditingController contactNumberController =
-      TextEditingController();
+  final TextEditingController contactNumberController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController pickupAddressController = TextEditingController();
   final TextEditingController stateController =
@@ -35,12 +34,49 @@ class SchedulePickupViewModel extends ViewModel {
 
   SchedulePickupViewModel({SchedulePickupRepository? repository})
       : _repository = repository ?? SchedulePickupRepositoryImpl() {
+    fullNameController.addListener(_onFieldChanged);
+    contactNumberController.addListener(_onFieldChanged);
+    pickupAddressController.addListener(_onFieldChanged);
+    stateController.addListener(_onFieldChanged);
+    zipCodeController.addListener(_onFieldChanged);
     loadUserProfile();
     _repository.getDisposalRates().then((_) {
-      if (_jurisdiction.localBodyId != null && _jurisdiction.ratePerKg == null) {
+      if (_jurisdiction.localBodyId != null &&
+          _jurisdiction.ratePerKg == null) {
         fetchAndApplyDisposalRate(_jurisdiction.localBodyId!);
       }
     });
+  }
+
+  void _onFieldChanged() {
+    notifyListeners();
+  }
+
+  bool get isFormValid {
+    final hasDistrict = _jurisdiction.district != 'Not Selected' &&
+        _jurisdiction.district.trim().isNotEmpty;
+    final hasLocalBody = _jurisdiction.localBody != 'Not Selected' &&
+        _jurisdiction.localBody.trim().isNotEmpty;
+    final hasWard = _jurisdiction.wardNameAndNumber != 'Not Selected' &&
+        _jurisdiction.wardNameAndNumber.trim().isNotEmpty;
+    final hasFullName = fullNameController.text.trim().isNotEmpty;
+    final hasPhone = contactNumberController.text.trim().isNotEmpty;
+    final hasAddress = pickupAddressController.text.trim().isNotEmpty;
+    final hasState = stateController.text.trim().isNotEmpty ||
+        _jurisdiction.state.trim().isNotEmpty;
+    final hasZip = zipCodeController.text.trim().isNotEmpty &&
+        zipCodeController.text.trim().length >= 5;
+    final hasDate = _pickupDate != null;
+
+    return hasDistrict &&
+        hasLocalBody &&
+        hasWard &&
+        hasFullName &&
+        hasPhone &&
+        hasAddress &&
+        hasState &&
+        hasZip &&
+        hasDate;
   }
 
   PickupResponseModel? _createdPickup;
@@ -145,7 +181,8 @@ class SchedulePickupViewModel extends ViewModel {
         } else if (profile.user?.firstName != null &&
             profile.user!.firstName!.isNotEmpty) {
           final fullName =
-              '${profile.user!.firstName!} ${profile.user?.lastName ?? ''}'.trim();
+              '${profile.user!.firstName!} ${profile.user?.lastName ?? ''}'
+                  .trim();
           fullNameController.text = fullName;
           await SpHelper.saveString(sp_keys.keyUserName, fullName);
         }
@@ -216,7 +253,7 @@ class SchedulePickupViewModel extends ViewModel {
       wardNameAndNumber: 'Not Selected',
       clearWardId: true,
       clearWardNumber: true,
-      ratePerKg: 40.00,
+      ratePerKg: 0.00,
     );
     _clearCalendarDates();
     notifyListeners();
@@ -231,7 +268,7 @@ class SchedulePickupViewModel extends ViewModel {
     if (rate != null && rate > 0) {
       setRatePerKg(rate);
     } else {
-      setRatePerKg(40.00);
+      setRatePerKg(0.00);
     }
   }
 
@@ -259,7 +296,55 @@ class SchedulePickupViewModel extends ViewModel {
     notifyListeners();
   }
 
+  String? validateForm() {
+    if (_jurisdiction.district == 'Not Selected' ||
+        _jurisdiction.district.trim().isEmpty) {
+      return 'Please select a District';
+    }
+    if (_jurisdiction.localBody == 'Not Selected' ||
+        _jurisdiction.localBody.trim().isEmpty) {
+      return 'Please select a Local Body';
+    }
+    if (_jurisdiction.wardNameAndNumber == 'Not Selected' ||
+        _jurisdiction.wardNameAndNumber.trim().isEmpty ||
+        _jurisdiction.wardId == null) {
+      return 'Please select Ward Name & Number';
+    }
+    if (fullNameController.text.trim().isEmpty) {
+      return 'Please enter your Full Name';
+    }
+    if (contactNumberController.text.trim().isEmpty) {
+      return 'Please enter your Contact Number';
+    }
+    if (pickupAddressController.text.trim().isEmpty) {
+      return 'Please enter Pickup Address';
+    }
+    final selectedState = stateController.text.trim().isNotEmpty
+        ? stateController.text.trim()
+        : _jurisdiction.state.trim();
+    if (selectedState.isEmpty) {
+      return 'Please enter or select State';
+    }
+    final zip = zipCodeController.text.trim();
+    if (zip.isEmpty) {
+      return 'Please enter Zip / Postal Code';
+    }
+    if (zip.length < 5) {
+      return 'Please enter a valid Zip / Postal Code';
+    }
+    if (_pickupDate == null) {
+      return 'Please select a Pickup Date';
+    }
+    return null;
+  }
+
   Future<bool> submit({Function(String error)? onError}) async {
+    final validationError = validateForm();
+    if (validationError != null) {
+      onError?.call(validationError);
+      return false;
+    }
+
     isLoading = true;
     notifyListeners();
     try {
@@ -295,6 +380,11 @@ class SchedulePickupViewModel extends ViewModel {
 
   @override
   void dispose() {
+    fullNameController.removeListener(_onFieldChanged);
+    contactNumberController.removeListener(_onFieldChanged);
+    pickupAddressController.removeListener(_onFieldChanged);
+    stateController.removeListener(_onFieldChanged);
+    zipCodeController.removeListener(_onFieldChanged);
     fullNameController.dispose();
     contactNumberController.dispose();
     emailController.dispose();

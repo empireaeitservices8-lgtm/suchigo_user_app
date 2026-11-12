@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 import '../../view_model/auth_view_model.dart';
 import 'package:suchigo_user_app/widgets/app_button_widget.dart';
 import 'package:suchigo_user_app/widgets/custom_toast.dart';
-import '../complete_profile_screen.dart';
 
 class OTPVerificationSheet extends StatelessWidget {
   final VoidCallback onVerificationSuccess;
@@ -190,24 +189,12 @@ class OTPVerificationSheet extends StatelessWidget {
               final success = await vm.verifyOTP();
               if (!context.mounted) return;
               if (success) {
-                Navigator.pop(context);
-                if (!vm.isRegistered) {
-                  Navigator.pushNamed(
-                    context,
-                    CompleteProfileScreen.routeName,
-                    arguments: CompleteProfileScreenArgs(
-                      phoneNumber: vm.fullPhoneNumber,
-                      otp: vm.otpCode,
-                    ),
-                  );
-                } else {
-                  onVerificationSuccess();
-                }
-              } else if (vm.errorMessage != null) {
+                onVerificationSuccess();
+              } else {
                 FocusScope.of(context).unfocus();
                 CustomToast.show(
                   context,
-                  message: vm.errorMessage!,
+                  message: 'OTP is invalid',
                   bottomOffset: MediaQuery.of(context).viewInsets.bottom > 0
                       ? MediaQuery.of(context).viewInsets.bottom + 20.h
                       : null,

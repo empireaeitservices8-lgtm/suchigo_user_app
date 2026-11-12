@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:suchigo_user_app/providers/view_model.dart';
 import '../model/booking_confirmed_model.dart';
 import '../repo/booking_confirmed_repo.dart';
@@ -13,9 +14,19 @@ class BookingConfirmedViewModel extends ViewModel {
 
   bool _isToastVisible = true;
   bool get isToastVisible => _isToastVisible;
+  Timer? _toastTimer;
 
   BookingConfirmedViewModel({BookingConfirmedRepository? repository})
-      : _repository = repository ?? BookingConfirmedRepositoryImpl();
+      : _repository = repository ?? BookingConfirmedRepositoryImpl() {
+    _startToastTimer();
+  }
+
+  void _startToastTimer() {
+    _toastTimer?.cancel();
+    _toastTimer = Timer(const Duration(seconds: 2), () {
+      hideToast();
+    });
+  }
 
   Future<void> init(BookingConfirmedModel? initialData) async {
     if (initialData != null) {
@@ -40,7 +51,24 @@ class BookingConfirmedViewModel extends ViewModel {
   }
 
   void hideToast() {
-    _isToastVisible = false;
+    _toastTimer?.cancel();
+    _toastTimer = null;
+    if (_isToastVisible) {
+      _isToastVisible = false;
+      notifyListeners();
+    }
+  }
+
+  void showToast() {
+    _isToastVisible = true;
     notifyListeners();
+    _startToastTimer();
+  }
+
+  @override
+  void dispose() {
+    _toastTimer?.cancel();
+    _toastTimer = null;
+    super.dispose();
   }
 }

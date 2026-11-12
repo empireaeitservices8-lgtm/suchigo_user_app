@@ -121,6 +121,15 @@ mixin WebAPIMixin {
               otherData: [data],
             );
           }
+
+          if (data.containsKey('otp')) {
+            throw APIException(
+              enumProperty: EnumAPIExceptions.dataSuccessFalse,
+              message: 'OTP is invalid',
+              data: data,
+              otherData: [data],
+            );
+          }
         }
 
         break;

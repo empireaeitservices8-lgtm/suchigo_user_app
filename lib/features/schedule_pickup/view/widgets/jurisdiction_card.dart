@@ -42,6 +42,7 @@ class JurisdictionCard extends StatelessWidget {
             value: jurisdiction.district,
             isSelected: jurisdiction.district != 'Not Selected',
             onTap: onSelectDistrict,
+            isRequired: true,
           ),
           _buildDivider(),
 
@@ -53,10 +54,11 @@ class JurisdictionCard extends StatelessWidget {
             badge: jurisdiction.localBody != 'Not Selected'
                 ? (jurisdiction.ratePerKg != null
                     ? '₹${jurisdiction.ratePerKg!.toStringAsFixed(0)}/kg'
-                    : '₹40/kg')
+                    : '₹0/kg')
                 : null,
             isSelected: jurisdiction.localBody != 'Not Selected',
             onTap: onSelectLocalBody,
+            isRequired: true,
           ),
           _buildDivider(),
 
@@ -67,6 +69,7 @@ class JurisdictionCard extends StatelessWidget {
             value: jurisdiction.wardNameAndNumber,
             isSelected: jurisdiction.wardNameAndNumber != 'Not Selected',
             onTap: onSelectWard,
+            isRequired: true,
           ),
           SizedBox(height: 16.h),
 
@@ -101,7 +104,7 @@ class JurisdictionCard extends StatelessWidget {
                   jurisdiction.ratePerKg != null
                       ? '₹${jurisdiction.ratePerKg!.toStringAsFixed(2)} / kg'
                       : (jurisdiction.localBody != 'Not Selected'
-                          ? '₹40.00 / kg'
+                          ? '₹0.00 / kg'
                           : '--'),
                   style: TextStyle(
                     fontSize: 14.sp,
@@ -127,6 +130,7 @@ class JurisdictionCard extends StatelessWidget {
     String? badge,
     required bool isSelected,
     required VoidCallback onTap,
+    bool isRequired = false,
   }) {
     return InkWell(
       onTap: onTap,
@@ -144,12 +148,27 @@ class JurisdictionCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    label,
-                    style: TextStyle(
-                      fontSize: 11.5.sp,
-                      fontWeight: FontWeight.w500,
-                      color: const Color(0xFF94A3B8),
+                  RichText(
+                    text: TextSpan(
+                      children: [
+                        TextSpan(
+                          text: label,
+                          style: TextStyle(
+                            fontSize: 11.5.sp,
+                            fontWeight: FontWeight.w500,
+                            color: const Color(0xFF94A3B8),
+                          ),
+                        ),
+                        if (isRequired)
+                          TextSpan(
+                            text: ' *',
+                            style: TextStyle(
+                              fontSize: 11.5.sp,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFFEF4444),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                   SizedBox(height: 2.h),
