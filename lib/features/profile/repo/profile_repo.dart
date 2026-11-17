@@ -7,6 +7,11 @@ abstract class ProfileRepository {
   Future<ProfileResponseModel> getProfile({
     Function(AppError error)? onError,
   });
+
+  Future<ProfileResponseModel> updateProfile(
+    EditProfileRequestModel request, {
+    Function(AppError error)? onError,
+  });
 }
 
 class ProfileRepositoryImpl implements ProfileRepository {
@@ -22,6 +27,22 @@ class ProfileRepositoryImpl implements ProfileRepository {
     await _apiService.initTokenToHeader();
     return _apiService.executeAPI<ProfileResponseModel>(
       methodToCall: _apiService.dio.get(urlProfile),
+      converter: ProfileResponseModel.fromJson,
+      onError: onError,
+    );
+  }
+
+  @override
+  Future<ProfileResponseModel> updateProfile(
+    EditProfileRequestModel request, {
+    Function(AppError error)? onError,
+  }) async {
+    await _apiService.initTokenToHeader();
+    return _apiService.executeAPI<ProfileResponseModel>(
+      methodToCall: _apiService.dio.patch(
+        urlProfileEdit,
+        data: request.toJson(),
+      ),
       converter: ProfileResponseModel.fromJson,
       onError: onError,
     );

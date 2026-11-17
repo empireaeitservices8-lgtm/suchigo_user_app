@@ -5,7 +5,6 @@ import '../../orders/view/widgets/pickup_tracking_bottom_sheet.dart';
 import '../../home/view/home_screen.dart';
 import '../model/booking_confirmed_model.dart';
 import '../view_model/booking_confirmed_view_model.dart';
-import 'widgets/booking_bottom_nav_bar.dart';
 import 'widgets/booking_confirmed_dialog.dart';
 import 'widgets/booking_id_card.dart';
 import 'widgets/collection_details_card.dart';
@@ -191,7 +190,7 @@ class _BookingConfirmedScreenState extends State<BookingConfirmedScreen> {
 
                 // Floating Toast Banner: "Pickup scheduled successfully!"
                 Positioned(
-                  bottom: 74.h,
+                  bottom: 24.h,
                   left: 16.w,
                   right: 16.w,
                   child: AnimatedOpacity(
@@ -246,20 +245,6 @@ class _BookingConfirmedScreenState extends State<BookingConfirmedScreen> {
                   ),
                 ),
               ],
-            );
-          },
-        ),
-        bottomNavigationBar: Consumer<BookingConfirmedViewModel>(
-          builder: (context, vm, child) {
-            return BookingBottomNavBar(
-              currentIndex: vm.selectedBottomNavIndex,
-              onTap: (index) {
-                vm.setBottomNavIndex(index);
-                if (index == 0) {
-                  // Navigate back to Home
-                  Navigator.popUntil(context, (route) => route.isFirst);
-                }
-              },
             );
           },
         ),

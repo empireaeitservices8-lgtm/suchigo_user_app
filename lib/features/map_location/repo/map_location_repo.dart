@@ -72,14 +72,74 @@ class MapLocationRepositoryImpl implements MapLocationRepository {
       debugPrint('[MapLocationRepo] Geocode error: $e');
     }
 
-    // Fallback coordinates if network/API limits reached
+    // Fallback to OpenStreetMap Nominatim reverse geocoding when Google Geocode API is unavailable
+    try {
+      final osmResponse = await _dio.get(
+        'https://nominatim.openstreetmap.org/reverse',
+        queryParameters: {
+          'format': 'jsonv2',
+          'lat': lat.toString(),
+          'lon': lng.toString(),
+          'addressdetails': 1,
+          'accept-language': 'en',
+        },
+        options: Options(
+          headers: {
+            'User-Agent': 'SuchiGoUserApp/1.0 (support@suchigo.com)',
+            'Accept': 'application/json',
+          },
+        ),
+      );
+
+      if (osmResponse.statusCode == 200 && osmResponse.data is Map) {
+        final data = osmResponse.data as Map;
+        final addr = (data['address'] as Map?) ?? {};
+        final displayName = data['display_name']?.toString().trim() ?? '';
+
+        final street = addr['road']?.toString() ??
+            addr['neighbourhood']?.toString() ??
+            addr['building']?.toString() ??
+            '';
+        final area = addr['suburb']?.toString() ??
+            addr['village']?.toString() ??
+            addr['town']?.toString() ??
+            addr['hamlet']?.toString() ??
+            addr['city_district']?.toString() ??
+            data['name']?.toString() ??
+            '';
+        final city = addr['city']?.toString() ??
+            addr['town']?.toString() ??
+            addr['county']?.toString() ??
+            addr['state_district']?.toString() ??
+            area;
+        final state = addr['state']?.toString() ?? 'Kerala';
+        final zipCode = addr['postcode']?.toString() ?? '';
+
+        if (displayName.isNotEmpty) {
+          return SelectedAddressModel(
+            fullAddress: displayName,
+            street: street,
+            area: area.isNotEmpty ? area : city,
+            city: city,
+            state: state,
+            zipCode: zipCode,
+            latitude: lat,
+            longitude: lng,
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('[MapLocationRepo] Nominatim reverse geocode error: $e');
+    }
+
     return SelectedAddressModel(
-      fullAddress: '9F, Kakkanad, Keralam, 682303, India',
-      street: '9F',
-      area: 'Kakkanad',
-      city: 'Kochi',
+      fullAddress:
+          'Lat: ${lat.toStringAsFixed(5)}, Lng: ${lng.toStringAsFixed(5)}',
+      street: '',
+      area: 'Selected Location',
+      city: '',
       state: 'Kerala',
-      zipCode: '682303',
+      zipCode: '',
       latitude: lat,
       longitude: lng,
     );
@@ -126,6 +186,65 @@ class MapLocationRepositoryImpl implements MapLocationRepository {
       }
     } catch (e) {
       debugPrint('[MapLocationRepo] Places Autocomplete error: $e');
+    }
+
+    // Fallback to OpenStreetMap Nominatim search when Google Places API is unavailable
+    try {
+      final osmResponse = await _dio.get(
+        'https://nominatim.openstreetmap.org/search',
+        queryParameters: {
+          'q': query.trim(),
+          'format': 'jsonv2',
+          'countrycodes': 'in',
+          'addressdetails': 1,
+          'limit': 6,
+          'accept-language': 'en',
+        },
+        options: Options(
+          headers: {
+            'User-Agent': 'SuchiGoUserApp/1.0 (support@suchigo.com)',
+            'Accept': 'application/json',
+          },
+        ),
+      );
+
+      if (osmResponse.statusCode == 200 && osmResponse.data is List) {
+        final items = osmResponse.data as List;
+        return items.map<SelectedAddressModel>((item) {
+          final addr = (item['address'] as Map?) ?? {};
+          final displayName = item['display_name']?.toString() ?? '';
+          final name = item['name']?.toString() ??
+              addr['suburb']?.toString() ??
+              addr['village']?.toString() ??
+              addr['town']?.toString() ??
+              addr['city']?.toString() ??
+              displayName.split(',').first.trim();
+          final city = addr['city']?.toString() ??
+              addr['town']?.toString() ??
+              addr['county']?.toString() ??
+              addr['state_district']?.toString() ??
+              '';
+          final state = addr['state']?.toString() ?? 'Kerala';
+          final zipCode = addr['postcode']?.toString() ?? '';
+          final lat =
+              double.tryParse(item['lat']?.toString() ?? '') ?? 10.00383;
+          final lng =
+              double.tryParse(item['lon']?.toString() ?? '') ?? 76.37574;
+
+          return SelectedAddressModel(
+            fullAddress: displayName,
+            street: addr['road']?.toString() ?? '',
+            area: name,
+            city: city,
+            state: state,
+            zipCode: zipCode,
+            latitude: lat,
+            longitude: lng,
+          );
+        }).toList();
+      }
+    } catch (e) {
+      debugPrint('[MapLocationRepo] Nominatim search error: $e');
     }
 
     return [];

@@ -853,6 +853,7 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
           controller: _nameController,
           icon: Icons.person_outline_rounded,
           hintText: 'Your Name',
+          readOnly: true,
         ),
         SizedBox(height: 12.h),
 
@@ -862,6 +863,7 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
           icon: Icons.phone_outlined,
           hintText: 'Phone Number',
           keyboardType: TextInputType.phone,
+          readOnly: true,
         ),
         SizedBox(height: 12.h),
 
@@ -1028,6 +1030,7 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
     required IconData icon,
     required String hintText,
     TextInputType keyboardType = TextInputType.text,
+    bool readOnly = false,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -1044,6 +1047,9 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
       child: TextField(
         controller: controller,
         keyboardType: keyboardType,
+        readOnly: readOnly,
+        canRequestFocus: !readOnly,
+        enableInteractiveSelection: !readOnly,
         style: TextStyle(
           fontSize: 14.sp,
           color: const Color(0xFF1E293B),

@@ -22,11 +22,14 @@ class ProfileResponseModel {
   });
 
   factory ProfileResponseModel.fromJson(Map<dynamic, dynamic> json) {
-    final userMap = json['user'] is Map ? json['user'] as Map : null;
-    String? phone = json['phone_number']?.toString() ??
-        json['phone']?.toString() ??
-        json['mobile']?.toString() ??
-        json['contact_number']?.toString();
+    final rootMap = json['data'] is Map
+        ? json['data'] as Map
+        : (json['profile'] is Map ? json['profile'] as Map : json);
+    final userMap = rootMap['user'] is Map ? rootMap['user'] as Map : null;
+    String? phone = rootMap['phone_number']?.toString() ??
+        rootMap['phone']?.toString() ??
+        rootMap['mobile']?.toString() ??
+        rootMap['contact_number']?.toString();
     if (phone == null || phone.trim().isEmpty) {
       if (userMap != null) {
         phone = userMap['phone_number']?.toString() ??
@@ -35,18 +38,27 @@ class ProfileResponseModel {
       }
     }
 
+    final parsedUser = userMap != null
+        ? UserAccountModel.fromJson(userMap)
+        : (rootMap['first_name'] != null ||
+                rootMap['last_name'] != null ||
+                rootMap['email'] != null ||
+                rootMap['username'] != null
+            ? UserAccountModel.fromJson(rootMap)
+            : null);
+
     return ProfileResponseModel(
-      id: int.tryParse(json['id']?.toString() ?? ''),
+      id: int.tryParse(rootMap['id']?.toString() ?? ''),
       phoneNumber: phone,
-      address: json['address']?.toString(),
-      profilePicture: json['profile_picture']?.toString(),
+      address: rootMap['address']?.toString(),
+      profilePicture: rootMap['profile_picture']?.toString(),
       numberOfBags:
-          int.tryParse(json['number_of_bags']?.toString() ?? '') ?? 0,
+          int.tryParse(rootMap['number_of_bags']?.toString() ?? '') ?? 0,
       walletBalance:
-          double.tryParse(json['wallet_balance']?.toString() ?? '') ?? 0.0,
-      gender: json['gender']?.toString(),
-      fcmToken: json['fcm_token']?.toString(),
-      user: userMap != null ? UserAccountModel.fromJson(userMap) : null,
+          double.tryParse(rootMap['wallet_balance']?.toString() ?? '') ?? 0.0,
+      gender: rootMap['gender']?.toString(),
+      fcmToken: rootMap['fcm_token']?.toString(),
+      user: parsedUser,
     );
   }
 
@@ -100,4 +112,29 @@ class UserAccountModel {
 
   String get fullName =>
       '${firstName ?? ''} ${lastName ?? ''}'.trim();
+}
+
+class EditProfileRequestModel {
+  final String? firstName;
+  final String? lastName;
+  final String? gender;
+  final String? email;
+  final String? address;
+
+  const EditProfileRequestModel({
+    this.firstName,
+    this.lastName,
+    this.gender,
+    this.email,
+    this.address,
+  });
+
+  Map<String, dynamic> toJson() => {
+        if (firstName != null) 'first_name': firstName!.trim(),
+        if (lastName != null) 'last_name': lastName!.trim(),
+        if (gender != null && gender!.trim().isNotEmpty)
+          'gender': gender!.trim().toLowerCase(),
+        if (email != null) 'email': email!.trim(),
+        if (address != null) 'address': address!.trim(),
+      };
 }

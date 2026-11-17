@@ -34,11 +34,11 @@ class SchedulePickupViewModel extends ViewModel {
 
   SchedulePickupViewModel({SchedulePickupRepository? repository})
       : _repository = repository ?? SchedulePickupRepositoryImpl() {
-    fullNameController.addListener(_onFieldChanged);
-    contactNumberController.addListener(_onFieldChanged);
-    pickupAddressController.addListener(_onFieldChanged);
-    stateController.addListener(_onFieldChanged);
-    zipCodeController.addListener(_onFieldChanged);
+    fullNameController.addListener(_onFormUpdated);
+    contactNumberController.addListener(_onFormUpdated);
+    pickupAddressController.addListener(_onFormUpdated);
+    zipCodeController.addListener(_onFormUpdated);
+    bagsCountController.addListener(_onFormUpdated);
     loadUserProfile();
     _repository.getDisposalRates().then((_) {
       if (_jurisdiction.localBodyId != null &&
@@ -48,35 +48,8 @@ class SchedulePickupViewModel extends ViewModel {
     });
   }
 
-  void _onFieldChanged() {
+  void _onFormUpdated() {
     notifyListeners();
-  }
-
-  bool get isFormValid {
-    final hasDistrict = _jurisdiction.district != 'Not Selected' &&
-        _jurisdiction.district.trim().isNotEmpty;
-    final hasLocalBody = _jurisdiction.localBody != 'Not Selected' &&
-        _jurisdiction.localBody.trim().isNotEmpty;
-    final hasWard = _jurisdiction.wardNameAndNumber != 'Not Selected' &&
-        _jurisdiction.wardNameAndNumber.trim().isNotEmpty;
-    final hasFullName = fullNameController.text.trim().isNotEmpty;
-    final hasPhone = contactNumberController.text.trim().isNotEmpty;
-    final hasAddress = pickupAddressController.text.trim().isNotEmpty;
-    final hasState = stateController.text.trim().isNotEmpty ||
-        _jurisdiction.state.trim().isNotEmpty;
-    final hasZip = zipCodeController.text.trim().isNotEmpty &&
-        zipCodeController.text.trim().length >= 5;
-    final hasDate = _pickupDate != null;
-
-    return hasDistrict &&
-        hasLocalBody &&
-        hasWard &&
-        hasFullName &&
-        hasPhone &&
-        hasAddress &&
-        hasState &&
-        hasZip &&
-        hasDate;
   }
 
   PickupResponseModel? _createdPickup;
@@ -90,27 +63,79 @@ class SchedulePickupViewModel extends ViewModel {
   PickupResponseModel? get createdPickup => _createdPickup;
   ProfileResponseModel? get userProfile => _userProfile;
 
+  /// Returns true only when all required booking fields are filled.
+  bool get isFormComplete {
+    final hasDistrict = _jurisdiction.district != 'Not Selected' &&
+        _jurisdiction.district.trim().isNotEmpty;
+    final hasLocalBody = _jurisdiction.localBody != 'Not Selected' &&
+        _jurisdiction.localBody.trim().isNotEmpty;
+    final hasFullName = fullNameController.text.trim().isNotEmpty;
+    final hasContactNumber = contactNumberController.text.trim().isNotEmpty;
+    final hasAddress = pickupAddressController.text.trim().isNotEmpty;
+    final hasZipCode = zipCodeController.text.trim().isNotEmpty;
+    final hasPickupDate = _pickupDate != null;
+    final hasBagsCount = bagsCountController.text.trim().isNotEmpty;
+
+    return hasDistrict &&
+        hasLocalBody &&
+        hasFullName &&
+        hasContactNumber &&
+        hasAddress &&
+        hasZipCode &&
+        hasPickupDate &&
+        hasBagsCount;
+  }
+
   /// All dates returned by the calendar-dates API for the selected local body.
   List<CalendarDateModel> get calendarDates => _calendarDates;
   bool get isLoadingCalendarDates => _isLoadingCalendarDates;
 
-  /// Calendar dates from today onwards (selectable pickup dates).
+  /// Weekdays allowed by the calendar-dates API for the selected local body.
+  Set<int> get _allowedWeekdays =>
+      _calendarDates.map((c) => c.weekday).toSet();
+
+  CalendarDateModel? _findCalendarEntry(DateTime target) {
+    for (final c in _calendarDates) {
+      if (c.date.year == target.year &&
+          c.date.month == target.month &&
+          c.date.day == target.day) {
+        return c;
+      }
+    }
+    return null;
+  }
+
+  /// Selectable pickup dates from today up to 1 year ahead, matching the
+  /// API's `day_of_week` while respecting `is_active` and `is_full`.
   List<DateTime> get upcomingPickupDates {
+    if (_calendarDates.isEmpty) return const [];
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    return _calendarDates
-        .map((c) => c.date)
-        .where((d) => !d.isBefore(today))
-        .toSet()
-        .toList()
-      ..sort();
+    final maxDate = DateTime(today.year + 1, today.month, today.day);
+    final result = <DateTime>[];
+    for (var day = today;
+        !day.isAfter(maxDate);
+        day = DateTime(day.year, day.month, day.day + 1)) {
+      if (isPickupDateAvailable(day)) {
+        result.add(day);
+      }
+    }
+    return result;
   }
 
   bool isPickupDateAvailable(DateTime date) {
-    return _calendarDates.any((c) =>
-        c.date.year == date.year &&
-        c.date.month == date.month &&
-        c.date.day == date.day);
+    if (_calendarDates.isEmpty) return false;
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final maxDate = DateTime(today.year + 1, today.month, today.day);
+    final target = DateTime(date.year, date.month, date.day);
+    if (target.isBefore(today) || target.isAfter(maxDate)) return false;
+
+    final exactEntry = _findCalendarEntry(target);
+    if (exactEntry != null) {
+      return exactEntry.isSelectable;
+    }
+    return _allowedWeekdays.contains(target.weekday);
   }
 
   Future<void> loadCalendarDates(int localBodyId) async {
@@ -124,6 +149,9 @@ class SchedulePickupViewModel extends ViewModel {
     _isLoadingCalendarDates = false;
     if (_pickupDate != null && !isPickupDateAvailable(_pickupDate!)) {
       _pickupDate = null;
+    }
+    if (_pickupDate == null && upcomingPickupDates.isNotEmpty) {
+      _pickupDate = upcomingPickupDates.first;
     }
     notifyListeners();
   }
@@ -339,15 +367,28 @@ class SchedulePickupViewModel extends ViewModel {
   }
 
   Future<bool> submit({Function(String error)? onError}) async {
-    final validationError = validateForm();
-    if (validationError != null) {
-      onError?.call(validationError);
+    if (_jurisdiction.district == 'Not Selected') {
+      onError?.call('Please select a district');
+      return false;
+    }
+    if (_jurisdiction.localBody == 'Not Selected') {
+      onError?.call('Please select a local body');
+      return false;
+    }
+    if (contactNumberController.text.trim().isEmpty) {
+      onError?.call('Please enter your contact number');
       return false;
     }
 
     isLoading = true;
     notifyListeners();
     try {
+      // Auto-fallback pickup date if not chosen
+      if (_pickupDate == null && upcomingPickupDates.isNotEmpty) {
+        _pickupDate = upcomingPickupDates.first;
+      }
+      _pickupDate ??= DateTime.now().add(const Duration(days: 1));
+
       final selectedState = stateController.text.trim().isNotEmpty
           ? stateController.text.trim()
           : _jurisdiction.state;
@@ -380,11 +421,11 @@ class SchedulePickupViewModel extends ViewModel {
 
   @override
   void dispose() {
-    fullNameController.removeListener(_onFieldChanged);
-    contactNumberController.removeListener(_onFieldChanged);
-    pickupAddressController.removeListener(_onFieldChanged);
-    stateController.removeListener(_onFieldChanged);
-    zipCodeController.removeListener(_onFieldChanged);
+    fullNameController.removeListener(_onFormUpdated);
+    contactNumberController.removeListener(_onFormUpdated);
+    pickupAddressController.removeListener(_onFormUpdated);
+    zipCodeController.removeListener(_onFormUpdated);
+    bagsCountController.removeListener(_onFormUpdated);
     fullNameController.dispose();
     contactNumberController.dispose();
     emailController.dispose();

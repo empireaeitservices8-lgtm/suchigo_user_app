@@ -165,8 +165,12 @@ class _SchedulePickupScreenState extends State<SchedulePickupScreen> {
     }
 
     final current = _viewModel.pickupDate;
-    final initial = current != null && availableDates.contains(current)
-        ? current
+    final normalizedCurrent = current != null
+        ? DateTime(current.year, current.month, current.day)
+        : null;
+    final initial = normalizedCurrent != null &&
+            _viewModel.isPickupDateAvailable(normalizedCurrent)
+        ? normalizedCurrent
         : availableDates.first;
 
     final picked = await showDatePicker(
@@ -174,8 +178,8 @@ class _SchedulePickupScreenState extends State<SchedulePickupScreen> {
       initialDate: initial,
       firstDate: availableDates.first,
       lastDate: availableDates.last,
+      initialEntryMode: DatePickerEntryMode.calendarOnly,
       selectableDayPredicate: (DateTime val) {
-        // Only dates returned by the calendar-dates API are selectable
         return _viewModel.isPickupDateAvailable(val);
       },
       helpText: 'Select Pickup Date',
@@ -186,6 +190,43 @@ class _SchedulePickupScreenState extends State<SchedulePickupScreen> {
               primary: Color(0xFF166534),
               onPrimary: Colors.white,
               onSurface: Color(0xFF1E293B),
+            ),
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(
+                foregroundColor: const Color(0xFF166534),
+                textStyle: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 15,
+                ),
+              ),
+            ),
+            datePickerTheme: DatePickerThemeData(
+              confirmButtonStyle: TextButton.styleFrom(
+                backgroundColor: const Color(0xFF166534),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 10,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                textStyle: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 15,
+                ),
+              ),
+              cancelButtonStyle: TextButton.styleFrom(
+                foregroundColor: const Color(0xFF334155),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
+                textStyle: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                ),
+              ),
             ),
           ),
           child: child!,
@@ -266,13 +307,13 @@ class _SchedulePickupScreenState extends State<SchedulePickupScreen> {
                         ),
                         SizedBox(height: 24.h),
 
-                        // Submit Button
+                        // Submit Button (disabled until all required fields are completed)
                         AppButton.gradient(
                           text: 'SUBMIT',
                           height: 54.h,
                           borderRadius: 28.r,
+                          isEnabled: vm.isFormComplete,
                           isLoading: vm.isLoading,
-                          isEnabled: vm.isFormValid,
                           disabledBackgroundColor: const Color(0xFFD1D5DB),
                           disabledTextColor: const Color(0xFF6B7280),
                           gradient: const LinearGradient(
@@ -293,7 +334,7 @@ class _SchedulePickupScreenState extends State<SchedulePickupScreen> {
                           textStyle: TextStyle(
                             fontSize: 16.sp,
                             fontWeight: FontWeight.w800,
-                            color: vm.isFormValid
+                            color: vm.isFormComplete
                                 ? Colors.white
                                 : const Color(0xFF6B7280),
                             letterSpacing: 1.0,
@@ -344,11 +385,11 @@ class _SchedulePickupScreenState extends State<SchedulePickupScreen> {
                                     pickup?.contactNumber.isNotEmpty == true
                                         ? pickup!.contactNumber
                                         : (vm.contactNumberController.text
-                                                .trim()
-                                                .isNotEmpty
-                                            ? vm.contactNumberController.text
-                                                .trim()
-                                            : ''),
+                                            .trim()
+                                            .isNotEmpty
+                                        ? vm.contactNumberController.text
+                                            .trim()
+                                        : ''),
                                 pickupAddress: pickup != null
                                     ? '${pickup.street},\n${pickup.district} – ${pickup.zipCode}'
                                     : (vm.pickupAddressController.text

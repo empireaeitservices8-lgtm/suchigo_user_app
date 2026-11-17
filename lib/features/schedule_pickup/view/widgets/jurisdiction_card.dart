@@ -51,11 +51,6 @@ class JurisdictionCard extends StatelessWidget {
             icon: Icons.location_city_outlined,
             label: 'Local Body',
             value: jurisdiction.localBody,
-            badge: jurisdiction.localBody != 'Not Selected'
-                ? (jurisdiction.ratePerKg != null
-                    ? '₹${jurisdiction.ratePerKg!.toStringAsFixed(0)}/kg'
-                    : '₹0/kg')
-                : null,
             isSelected: jurisdiction.localBody != 'Not Selected',
             onTap: onSelectLocalBody,
             isRequired: true,
@@ -67,7 +62,8 @@ class JurisdictionCard extends StatelessWidget {
             icon: Icons.meeting_room_outlined,
             label: 'Ward Name & Number',
             value: jurisdiction.wardNameAndNumber,
-            isSelected: jurisdiction.wardNameAndNumber != 'Not Selected',
+            isSelected: jurisdiction.wardNameAndNumber != 'Not Selected' &&
+                jurisdiction.wardNameAndNumber != 'Loading Ward...',
             onTap: onSelectWard,
             isRequired: true,
           ),
@@ -113,6 +109,29 @@ class JurisdictionCard extends StatelessWidget {
                             jurisdiction.localBody != 'Not Selected')
                         ? const Color(0xFF166534)
                         : const Color(0xFF64748B),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 8.h),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                Icons.info_outline_rounded,
+                size: 14.sp,
+                color: const Color(0xFF64748B),
+              ),
+              SizedBox(width: 6.w),
+              Expanded(
+                child: Text(
+                  'Additional charges will be applied based on the bag size.',
+                  style: TextStyle(
+                    fontSize: 11.5.sp,
+                    fontWeight: FontWeight.w500,
+                    color: const Color(0xFF64748B),
+                    height: 1.3,
                   ),
                 ),
               ),

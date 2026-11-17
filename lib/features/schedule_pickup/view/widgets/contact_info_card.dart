@@ -136,6 +136,8 @@ class ContactInfoCard extends StatelessWidget {
       child: TextField(
         controller: controller,
         readOnly: readOnly,
+        canRequestFocus: !readOnly,
+        enableInteractiveSelection: !readOnly,
         keyboardType: keyboardType,
         style: TextStyle(
           fontSize: 14.sp,

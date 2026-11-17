@@ -459,14 +459,14 @@ class _ProfileViewState extends State<ProfileView> {
               Navigator.pushNamed(context, OrderHistoryScreen.routeName);
             },
           ),
-          _buildDivider(),
-          _buildMenuItem(
-            icon: Icons.receipt_long_outlined,
-            title: 'Bills Received',
-            onTap: () {
-              Navigator.pushNamed(context, BillsReceivedScreen.routeName);
-            },
-          ),
+          // _buildDivider(),
+          // _buildMenuItem(
+          //   icon: Icons.receipt_long_outlined,
+          //   title: 'Bills Received',
+          //   onTap: () {
+          //     Navigator.pushNamed(context, BillsReceivedScreen.routeName);
+          //   },
+          // ),
           _buildDivider(),
           _buildMenuItem(
             icon: Icons.person_outline_rounded,

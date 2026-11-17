@@ -85,11 +85,19 @@ class SchedulePickupRequestModel {
   });
 
   Map<String, dynamic> toJson() {
-    final cleanWard = jurisdiction.wardNameAndNumber.contains(' - ')
-        ? jurisdiction.wardNameAndNumber.split(' - ').last.trim()
-        : (jurisdiction.wardNameAndNumber != 'Not Selected'
-            ? jurisdiction.wardNameAndNumber
-            : 'Neericode West');
+    String cleanWard;
+    if (jurisdiction.wardNameAndNumber.contains(' - ')) {
+      cleanWard = jurisdiction.wardNameAndNumber.split(' - ').last.trim();
+    } else if (jurisdiction.wardNameAndNumber != 'Not Selected' &&
+        jurisdiction.wardNameAndNumber != 'Loading Ward...' &&
+        jurisdiction.wardNameAndNumber.isNotEmpty) {
+      cleanWard = jurisdiction.wardNameAndNumber;
+    } else if (jurisdiction.wardNumber != null &&
+        jurisdiction.wardNumber! > 0) {
+      cleanWard = 'Ward ${jurisdiction.wardNumber}';
+    } else {
+      cleanWard = 'Ward 1';
+    }
 
     final cleanLocalBody = jurisdiction.localBody != 'Not Selected'
         ? jurisdiction.localBody
@@ -102,7 +110,7 @@ class SchedulePickupRequestModel {
     final cleanDate = pickupDate != null
         ? DateFormat('yyyy-MM-dd').format(pickupDate!)
         : DateFormat('yyyy-MM-dd')
-            .format(DateTime.now().add(const Duration(days: 2)));
+            .format(DateTime.now().add(const Duration(days: 1)));
 
     final cleanContact =
         contactNumber.isNotEmpty ? contactNumber : '+917306929058';
@@ -115,12 +123,12 @@ class SchedulePickupRequestModel {
         : (jurisdiction.state.isNotEmpty ? jurisdiction.state : 'Kerala');
 
     return {
-      'full_name': fullName.isNotEmpty ? fullName : 'tesdt',
+      'full_name': fullName.isNotEmpty ? fullName : 'User',
       'email': cleanEmail,
       'contact_number': cleanContact,
       'street': pickupAddress.isNotEmpty
           ? pickupAddress
-          : '9F, Kakkanad, Keralam, 682303, India',
+          : '$cleanLocalBody, $cleanDistrict',
       'city': cleanDistrict,
       'zip_code': zipCode.isNotEmpty ? zipCode : '682303',
       'state': cleanState,
@@ -275,9 +283,8 @@ class LocalBodyModel {
   factory LocalBodyModel.fromJson(Map<dynamic, dynamic> json) {
     return LocalBodyModel(
       id: int.tryParse(json['id']?.toString() ?? '') ?? 0,
-      name: json['name']?.toString() ??
-          json['local_body_name']?.toString() ??
-          '',
+      name:
+          json['name']?.toString() ?? json['local_body_name']?.toString() ?? '',
       localBodyType: json['localbody_type']?.toString() ??
           json['local_body_type']?.toString(),
       districtId: int.tryParse(
@@ -313,7 +320,9 @@ class WardModel {
       wardNumber: int.tryParse(json['ward_number']?.toString() ?? '') ?? 0,
       wardName: json['ward_name']?.toString() ?? '',
       localBodyId: int.tryParse(
-        json['local_body']?.toString() ?? json['local_body_id']?.toString() ?? '',
+        json['local_body']?.toString() ??
+            json['local_body_id']?.toString() ??
+            '',
       ),
     );
   }
@@ -336,8 +345,7 @@ class DisposalRateModel {
       localBodyId: int.tryParse(json['local_body_id']?.toString() ?? '') ??
           int.tryParse(json['local_body']?.toString() ?? '') ??
           0,
-      ratePerKg:
-          double.tryParse(json['rate_per_kg']?.toString() ?? '') ?? 0.0,
+      ratePerKg: double.tryParse(json['rate_per_kg']?.toString() ?? '') ?? 0.0,
     );
   }
 }
@@ -347,12 +355,35 @@ class CalendarDateModel {
   final int id;
   final String localBodyName;
   final DateTime date;
+  final String dayOfWeek;
+  final bool isActive;
+  final bool isFull;
 
   const CalendarDateModel({
     required this.id,
     required this.localBodyName,
     required this.date,
+    this.dayOfWeek = '',
+    this.isActive = true,
+    this.isFull = false,
   });
+
+  static const Map<String, int> _weekdayMap = {
+    'monday': DateTime.monday,
+    'tuesday': DateTime.tuesday,
+    'wednesday': DateTime.wednesday,
+    'thursday': DateTime.thursday,
+    'friday': DateTime.friday,
+    'saturday': DateTime.saturday,
+    'sunday': DateTime.sunday,
+  };
+
+  /// Weekday number (`DateTime.monday`..`DateTime.sunday`) from `dayOfWeek`,
+  /// falling back to `date.weekday` when `dayOfWeek` is empty or unrecognized.
+  int get weekday =>
+      _weekdayMap[dayOfWeek.trim().toLowerCase()] ?? date.weekday;
+
+  bool get isSelectable => isActive && !isFull;
 
   static CalendarDateModel? tryFromJson(Map<dynamic, dynamic> json) {
     final parsed = DateTime.tryParse(json['date']?.toString() ?? '');
@@ -363,7 +394,9 @@ class CalendarDateModel {
           json['local_body']?.toString() ??
           '',
       date: DateTime(parsed.year, parsed.month, parsed.day),
+      dayOfWeek: json['day_of_week']?.toString() ?? '',
+      isActive: json['is_active'] is bool ? json['is_active'] as bool : true,
+      isFull: json['is_full'] is bool ? json['is_full'] as bool : false,
     );
   }
 }
-

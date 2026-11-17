@@ -3,7 +3,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import 'package:suchigo_user_app/features/home/view/home_screen.dart';
 import 'package:suchigo_user_app/features/home/view/widgets/bottom_nav_bar.dart';
-import 'package:suchigo_user_app/features/schedule_pickup/view/schedule_pickup_screen.dart';
 import 'package:suchigo_user_app/widgets/app_button_widget.dart';
 import '../model/order_model.dart';
 import '../view_model/order_view_model.dart';
@@ -283,9 +282,8 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
           color: isSelected ? const Color(0xFF1D723B) : Colors.white,
           borderRadius: BorderRadius.circular(20.r),
           border: Border.all(
-            color: isSelected
-                ? const Color(0xFF1D723B)
-                : const Color(0xFFE2E8F0),
+            color:
+                isSelected ? const Color(0xFF1D723B) : const Color(0xFFE2E8F0),
             width: 1.2,
           ),
           boxShadow: isSelected
@@ -401,52 +399,141 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
             icon: Icons.location_on_outlined,
             text: order.address,
           ),
-          SizedBox(height: 8.h),
 
-          // Weight Row
-          _buildInfoRow(
-            icon: Icons.scale_outlined,
-            text: '${order.weightKg.toStringAsFixed(1)} kg',
-          ),
+          if (order.orderStatus != OrderStatus.completed) ...[
+            SizedBox(height: 8.h),
 
-          SizedBox(height: 14.h),
-          const Divider(
-            height: 1,
-            color: Color(0xFFE2E8F0),
-          ),
-          SizedBox(height: 14.h),
+            // Weight Row
+            _buildInfoRow(
+              icon: Icons.scale_outlined,
+              text: '${order.weightKg.toStringAsFixed(1)} kg',
+            ),
+          ],
 
-          // Action Button
-          _buildActionButtons(context, order),
+          if (order.orderStatus == OrderStatus.completed) ...[
+            SizedBox(height: 14.h),
+            const Divider(
+              height: 1,
+              color: Color(0xFFE2E8F0),
+            ),
+            SizedBox(height: 12.h),
+            _buildCompletedDetails(order),
+          ] else if (order.orderStatus == OrderStatus.pending) ...[
+            SizedBox(height: 14.h),
+            const Divider(
+              height: 1,
+              color: Color(0xFFE2E8F0),
+            ),
+            SizedBox(height: 14.h),
+
+            // Action Button
+            _buildActionButtons(context, order),
+          ],
         ],
       ),
+    );
+  }
+
+  Widget _buildCompletedDetails(OrderModel order) {
+    final weightText = '${order.weightKg.toStringAsFixed(1)} kg';
+    final amountText = '₹${(order.amount ?? 0.0).toStringAsFixed(2)}';
+    final bagChargeText = '₹${(order.bagCharge ?? 0.0).toStringAsFixed(2)}';
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildMetricItem(
+              icon: Icons.scale_outlined,
+              label: 'Weight',
+              value: weightText,
+            ),
+          ),
+          Container(
+            width: 1,
+            height: 32.h,
+            color: const Color(0xFFE2E8F0),
+          ),
+          Expanded(
+            child: _buildMetricItem(
+              icon: Icons.currency_rupee_rounded,
+              label: 'Amount',
+              value: amountText,
+            ),
+          ),
+          Container(
+            width: 1,
+            height: 32.h,
+            color: const Color(0xFFE2E8F0),
+          ),
+          Expanded(
+            child: _buildMetricItem(
+              icon: Icons.shopping_bag_outlined,
+              label: 'Bag Charge',
+              value: bagChargeText,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMetricItem({
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 13.sp,
+              color: const Color(0xFF64748B),
+            ),
+            SizedBox(width: 4.w),
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 11.5.sp,
+                  fontWeight: FontWeight.w500,
+                  color: const Color(0xFF64748B),
+                ),
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: 4.h),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 13.5.sp,
+            fontWeight: FontWeight.w700,
+            color: const Color(0xFF1E293B),
+          ),
+        ),
+      ],
     );
   }
 
   Widget _buildActionButtons(BuildContext context, OrderModel order) {
     if (order.orderStatus == OrderStatus.cancelled ||
         order.orderStatus == OrderStatus.completed) {
-      return SizedBox(
-        width: double.infinity,
-        child: AppButton(
-          text: 'Repeat Booking',
-          height: 44.h,
-          borderRadius: 12.r,
-          backgroundColor: const Color(0xFF1D723B),
-          fontSize: 14.sp,
-          prefixIcon: Icon(
-            Icons.repeat_rounded,
-            color: Colors.white,
-            size: 18.sp,
-          ),
-          onTap: () {
-            Navigator.pushNamed(
-              context,
-              SchedulePickupScreen.routeName,
-            );
-          },
-        ),
-      );
+      return const SizedBox.shrink();
     }
 
     // Pending / In-progress: Show both Track Vehicle and Repeat Booking
@@ -478,26 +565,27 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
         SizedBox(width: 10.w),
 
         // Repeat Booking
-        Expanded(
-          child: AppButton(
-            text: 'Repeat Booking',
-            height: 44.h,
-            borderRadius: 12.r,
-            backgroundColor: const Color(0xFF1D723B),
-            fontSize: 13.sp,
-            prefixIcon: Icon(
-              Icons.repeat_rounded,
-              color: Colors.white,
-              size: 16.sp,
-            ),
-            onTap: () {
-              Navigator.pushNamed(
-                context,
-                SchedulePickupScreen.routeName,
-              );
-            },
-          ),
-        ),
+
+        // Expanded(
+        //   child: AppButton(
+        //     text: 'Repeat Booking',
+        //     height: 44.h,
+        //     borderRadius: 12.r,
+        //     backgroundColor: const Color(0xFF1D723B),
+        //     fontSize: 13.sp,
+        //     prefixIcon: Icon(
+        //       Icons.repeat_rounded,
+        //       color: Colors.white,
+        //       size: 16.sp,
+        //     ),
+        //     onTap: () {
+        //       Navigator.pushNamed(
+        //         context,
+        //         SchedulePickupScreen.routeName,
+        //       );
+        //     },
+        //   ),
+        // ),
       ],
     );
   }

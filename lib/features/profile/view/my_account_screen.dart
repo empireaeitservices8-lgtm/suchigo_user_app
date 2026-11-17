@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:suchigo_user_app/features/profile/model/profile_model.dart';
 import 'package:suchigo_user_app/features/profile/repo/profile_repo.dart';
 import 'package:suchigo_user_app/helpers/logout_helper.dart';
 import 'package:suchigo_user_app/helpers/sp_helper.dart';
@@ -27,6 +28,8 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
   int _treesSaved = 0;
 
   String _userName = '';
+  String _firstName = '';
+  String _lastName = '';
   String _phoneNumber = '';
   String? _email;
   String? _address;
@@ -63,6 +66,12 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
     // 1. Fetch live profile from Profile API
     try {
       final p = await _profileRepo.getProfile();
+      if (p.user?.firstName != null) {
+        _firstName = p.user!.firstName!.trim();
+      }
+      if (p.user?.lastName != null) {
+        _lastName = p.user!.lastName!.trim();
+      }
       if (p.fullName.isNotEmpty && p.fullName.toLowerCase() != 'user') {
         _userName = p.fullName;
         await SpHelper.saveString(sp_keys.keyUserName, _userName);
@@ -170,14 +179,372 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
     }
   }
 
-  void _showComingSoon(String feature) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$feature editing will be available soon.'),
-        backgroundColor: const Color(0xFF1D723B),
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 2),
-      ),
+  void _showEditProfileSheet() {
+    String initFirst = _firstName;
+    String initLast = _lastName;
+    if (initFirst.isEmpty && _userName.isNotEmpty) {
+      final parts = _userName.trim().split(RegExp(r'\s+'));
+      initFirst = parts.first;
+      initLast = parts.length > 1 ? parts.sublist(1).join(' ') : '';
+    }
+
+    final firstNameCtrl = TextEditingController(text: initFirst);
+    final lastNameCtrl = TextEditingController(text: initLast);
+    final emailCtrl = TextEditingController(text: _email ?? '');
+    final addressCtrl = TextEditingController(text: _address ?? '');
+    String selectedGender =
+        (_gender != null && _gender!.trim().isNotEmpty)
+            ? _gender!.trim().toLowerCase()
+            : 'female';
+    if (!['male', 'female', 'other'].contains(selectedGender)) {
+      selectedGender = 'female';
+    }
+    bool isSaving = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetCtx) {
+        return StatefulBuilder(
+          builder: (ctx, setSheetState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(ctx).viewInsets.bottom,
+              ),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(28.r),
+                  ),
+                ),
+                padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 24.h),
+                child: SafeArea(
+                  top: false,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Center(
+                          child: Container(
+                            width: 44.w,
+                            height: 4.5.h,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFCBD5E1),
+                              borderRadius: BorderRadius.circular(3.r),
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 16.h),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Edit Profile',
+                              style: TextStyle(
+                                fontSize: 18.sp,
+                                fontWeight: FontWeight.w800,
+                                color: const Color(0xFF1E293B),
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: () => Navigator.pop(sheetCtx),
+                              icon: const Icon(
+                                Icons.close_rounded,
+                                color: Color(0xFF64748B),
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 12.h),
+
+                        // First Name & Last Name
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildEditField(
+                                label: 'First Name',
+                                controller: firstNameCtrl,
+                                hint: 'First name',
+                              ),
+                            ),
+                            SizedBox(width: 12.w),
+                            Expanded(
+                              child: _buildEditField(
+                                label: 'Last Name',
+                                controller: lastNameCtrl,
+                                hint: 'Last name',
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 14.h),
+
+                        // Gender Selector
+                        Text(
+                          'Gender',
+                          style: TextStyle(
+                            fontSize: 13.sp,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF1E293B),
+                          ),
+                        ),
+                        SizedBox(height: 8.h),
+                        Row(
+                          children: ['male', 'female', 'other'].map((g) {
+                            final isSelected = selectedGender == g;
+                            final label =
+                                '${g[0].toUpperCase()}${g.substring(1)}';
+                            return Expanded(
+                              child: Padding(
+                                padding: EdgeInsets.only(
+                                  right: g != 'other' ? 8.w : 0,
+                                ),
+                                child: InkWell(
+                                  onTap: () {
+                                    setSheetState(() {
+                                      selectedGender = g;
+                                    });
+                                  },
+                                  borderRadius: BorderRadius.circular(12.r),
+                                  child: Container(
+                                    padding:
+                                        EdgeInsets.symmetric(vertical: 10.h),
+                                    decoration: BoxDecoration(
+                                      color: isSelected
+                                          ? const Color(0xFFE8F5E9)
+                                          : const Color(0xFFF8FAFC),
+                                      borderRadius: BorderRadius.circular(12.r),
+                                      border: Border.all(
+                                        color: isSelected
+                                            ? const Color(0xFF1D723B)
+                                            : const Color(0xFFE2E8F0),
+                                        width: isSelected ? 1.5 : 1.0,
+                                      ),
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        label,
+                                        style: TextStyle(
+                                          fontSize: 13.5.sp,
+                                          fontWeight: isSelected
+                                              ? FontWeight.w700
+                                              : FontWeight.w500,
+                                          color: isSelected
+                                              ? const Color(0xFF1D723B)
+                                              : const Color(0xFF475569),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                        SizedBox(height: 14.h),
+
+                        // Email Address
+                        _buildEditField(
+                          label: 'Email Address',
+                          controller: emailCtrl,
+                          hint: 'Enter your email address',
+                          keyboardType: TextInputType.emailAddress,
+                        ),
+                        SizedBox(height: 14.h),
+
+                        // Address
+                        _buildEditField(
+                          label: 'Address',
+                          controller: addressCtrl,
+                          hint: 'Enter your address',
+                          maxLines: 2,
+                        ),
+                        SizedBox(height: 22.h),
+
+                        // Save Button
+                        SizedBox(
+                          width: double.infinity,
+                          height: 48.h,
+                          child: ElevatedButton(
+                            onPressed: isSaving
+                                ? null
+                                : () async {
+                                    final fName = firstNameCtrl.text.trim();
+                                    final lName = lastNameCtrl.text.trim();
+                                    if (fName.isEmpty) {
+                                      CustomToast.show(
+                                        context,
+                                        message: 'Please enter your first name',
+                                      );
+                                      return;
+                                    }
+
+                                    setSheetState(() => isSaving = true);
+                                    String? apiError;
+                                    try {
+                                      final req = EditProfileRequestModel(
+                                        firstName: fName,
+                                        lastName: lName,
+                                        gender: selectedGender,
+                                        email: emailCtrl.text.trim(),
+                                        address: addressCtrl.text.trim(),
+                                      );
+                                      await _profileRepo.updateProfile(
+                                        req,
+                                        onError: (err) {
+                                          apiError = err.message;
+                                        },
+                                      );
+
+                                      if (apiError != null &&
+                                          apiError!.isNotEmpty) {
+                                        if (mounted) {
+                                          CustomToast.show(
+                                            context,
+                                            message: apiError!,
+                                          );
+                                        }
+                                        setSheetState(() => isSaving = false);
+                                        return;
+                                      }
+
+                                      final updatedFullName =
+                                          '$fName $lName'.trim();
+                                      await SpHelper.saveString(
+                                        sp_keys.keyUserName,
+                                        updatedFullName,
+                                      );
+                                      if (emailCtrl.text.trim().isNotEmpty) {
+                                        await SpHelper.saveString(
+                                          sp_keys.keyEmail,
+                                          emailCtrl.text.trim(),
+                                        );
+                                      }
+
+                                      if (mounted) {
+                                        setState(() {
+                                          _firstName = fName;
+                                          _lastName = lName;
+                                          _userName = updatedFullName;
+                                          _gender = selectedGender;
+                                          _email = emailCtrl.text.trim();
+                                          _address = addressCtrl.text.trim();
+                                          if (_address != null &&
+                                              _address!.isNotEmpty) {
+                                            _parseAddressComponents(_address!);
+                                          }
+                                        });
+                                        Navigator.pop(sheetCtx);
+                                        CustomToast.show(
+                                          context,
+                                          message:
+                                              'Profile updated successfully',
+                                          icon: Icons
+                                              .check_circle_outline_rounded,
+                                        );
+                                        _loadData();
+                                      }
+                                    } catch (e) {
+                                      if (mounted) {
+                                        CustomToast.show(
+                                          context,
+                                          message: apiError ??
+                                              'Failed to update profile',
+                                        );
+                                      }
+                                      setSheetState(() => isSaving = false);
+                                    }
+                                  },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF1D723B),
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14.r),
+                              ),
+                              elevation: 0,
+                            ),
+                            child: isSaving
+                                ? SizedBox(
+                                    width: 22.w,
+                                    height: 22.w,
+                                    child: const CircularProgressIndicator(
+                                      strokeWidth: 2.5,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : Text(
+                                    'Save Changes',
+                                    style: TextStyle(
+                                      fontSize: 15.sp,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildEditField({
+    required String label,
+    required TextEditingController controller,
+    required String hint,
+    TextInputType keyboardType = TextInputType.text,
+    int maxLines = 1,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 13.sp,
+            fontWeight: FontWeight.w700,
+            color: const Color(0xFF1E293B),
+          ),
+        ),
+        SizedBox(height: 6.h),
+        Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(12.r),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: TextField(
+            controller: controller,
+            keyboardType: keyboardType,
+            maxLines: maxLines,
+            style: TextStyle(
+              fontSize: 14.sp,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF1E293B),
+            ),
+            decoration: InputDecoration(
+              hintText: hint,
+              hintStyle: TextStyle(
+                fontSize: 13.5.sp,
+                color: const Color(0xFF94A3B8),
+              ),
+              border: InputBorder.none,
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 14.w,
+                vertical: 12.h,
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -574,7 +941,7 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
               ),
             ),
             InkWell(
-              onTap: () => _showComingSoon('Profile'),
+              onTap: _showEditProfileSheet,
               borderRadius: BorderRadius.circular(20.r),
               child: Container(
                 padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 6.h),
@@ -707,7 +1074,7 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
                 label: 'Address',
                 value: _address?.isNotEmpty == true ? _address! : 'Add Address',
                 isPlaceholder: _address == null || _address!.isEmpty,
-                onTapPlaceholder: () => _showComingSoon('Address'),
+                onTapPlaceholder: _showEditProfileSheet,
               ),
               Padding(
                 padding: EdgeInsets.symmetric(vertical: 12.h),
@@ -718,7 +1085,7 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
                 label: 'City',
                 value: _city?.isNotEmpty == true ? _city! : 'Add City',
                 isPlaceholder: _city == null || _city!.isEmpty,
-                onTapPlaceholder: () => _showComingSoon('City'),
+                onTapPlaceholder: _showEditProfileSheet,
               ),
               Padding(
                 padding: EdgeInsets.symmetric(vertical: 12.h),
@@ -729,7 +1096,7 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
                 label: 'Pincode',
                 value: _pincode?.isNotEmpty == true ? _pincode! : 'Add Pincode',
                 isPlaceholder: _pincode == null || _pincode!.isEmpty,
-                onTapPlaceholder: () => _showComingSoon('Pincode'),
+                onTapPlaceholder: _showEditProfileSheet,
               ),
             ],
           ),

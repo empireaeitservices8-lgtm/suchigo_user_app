@@ -8,6 +8,7 @@ String urlVerifyOTP = "${urlBase}otp/verify/";
 String urlRegister = "${urlBase}register/";
 String urlLogin = "${urlBase}login/";
 String urlProfile = "${urlBase}profile/";
+String urlProfileEdit = "${urlBase}profile/edit/";
 String urlBills = "${urlBase}bill-history-from-collector/";
 String urlBillHistoryFromCollector = "${urlBase}bill-history-from-collector/";
 String urlPickups = "${urlBase}pickups/";

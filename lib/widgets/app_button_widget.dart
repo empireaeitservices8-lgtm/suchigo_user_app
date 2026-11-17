@@ -273,7 +273,7 @@ class AppButton extends StatelessWidget {
           height: height ?? 52.h,
           padding: padding ?? EdgeInsets.symmetric(horizontal: 16.w),
           decoration: BoxDecoration(
-            color: (!isEnabled || gradient == null) ? effectiveBg : null,
+            color: (gradient == null || !isEnabled) ? effectiveBg : null,
             gradient: isEnabled ? gradient : null,
             borderRadius: BorderRadius.circular(effectiveRadius),
             border: border,
@@ -303,13 +303,22 @@ class AppButton extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           textAlign: TextAlign.center,
-                          style: textStyle ??
-                              TextStyle(
-                                fontSize: fontSize ?? 16.sp,
-                                fontWeight: fontWeight ?? FontWeight.w700,
-                                color: effectiveTextColor,
-                                letterSpacing: 0.3,
-                              ),
+                          style: isEnabled
+                              ? (textStyle ??
+                                  TextStyle(
+                                    fontSize: fontSize ?? 16.sp,
+                                    fontWeight: fontWeight ?? FontWeight.w700,
+                                    color: effectiveTextColor,
+                                    letterSpacing: 0.3,
+                                  ))
+                              : (textStyle?.copyWith(
+                                      color: effectiveTextColor) ??
+                                  TextStyle(
+                                    fontSize: fontSize ?? 16.sp,
+                                    fontWeight: fontWeight ?? FontWeight.w700,
+                                    color: effectiveTextColor,
+                                    letterSpacing: 0.3,
+                                  )),
                         ),
                       ),
                       if (suffixIcon != null) ...[

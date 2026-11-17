@@ -20,6 +20,8 @@ class MapLocationViewModel extends ViewModel {
   double _currentLat = 10.00383;
   double _currentLng = 76.37574;
   int _zoom = 15;
+  int _addressRequestId = 0;
+  bool _skipNextCameraIdleGeocode = false;
   Timer? _debounceTimer;
 
   MapLocationViewModel({MapLocationRepository? repository})
@@ -51,19 +53,35 @@ class MapLocationViewModel extends ViewModel {
   }
 
   void onCameraIdle() {
+    if (_skipNextCameraIdleGeocode) {
+      _skipNextCameraIdleGeocode = false;
+      return;
+    }
     fetchAddressForCurrentLocation();
   }
 
-  void animateTo(double lat, double lng, {double? zoomLevel}) {
+  void animateTo(
+    double lat,
+    double lng, {
+    double? zoomLevel,
+    bool fetchAddress = true,
+  }) {
     _currentLat = lat;
     _currentLng = lng;
+    if (!fetchAddress) {
+      _skipNextCameraIdleGeocode = true;
+    }
     mapController?.animateCamera(
       CameraUpdate.newLatLngZoom(
         LatLng(lat, lng),
         zoomLevel ?? _zoom.toDouble(),
       ),
     );
-    fetchAddressForCurrentLocation();
+    if (fetchAddress) {
+      fetchAddressForCurrentLocation();
+    } else {
+      notifyListeners();
+    }
   }
 
   Future<void> checkInitialLocationPermission() async {
@@ -198,17 +216,22 @@ class MapLocationViewModel extends ViewModel {
     }
   }
 
-  void fetchAddressForCurrentLocation() async {
+  Future<void> fetchAddressForCurrentLocation() async {
+    final requestId = ++_addressRequestId;
+    final lat = _currentLat;
+    final lng = _currentLng;
+    _selectedAddress = null;
+    notifyListeners();
     try {
-      final address = await _repository.getAddressFromCoordinates(
-        _currentLat,
-        _currentLng,
-      );
+      final address = await _repository.getAddressFromCoordinates(lat, lng);
+      if (requestId != _addressRequestId) return;
       _selectedAddress = address;
     } catch (e) {
-      // Keep existing address if available
+      if (requestId != _addressRequestId) return;
     } finally {
-      notifyListeners();
+      if (requestId == _addressRequestId) {
+        notifyListeners();
+      }
     }
   }
 
@@ -217,19 +240,20 @@ class MapLocationViewModel extends ViewModel {
     _isSearching = false;
     searchController.clear();
     FocusManager.instance.primaryFocus?.unfocus();
+    _addressRequestId++;
 
     if (address.placeId != null && address.placeId!.isNotEmpty) {
       try {
         final details = await _repository.getPlaceDetails(address.placeId!);
         _selectedAddress = details;
-        animateTo(details.latitude, details.longitude);
+        animateTo(details.latitude, details.longitude, fetchAddress: false);
       } catch (e) {
         _selectedAddress = address;
-        animateTo(address.latitude, address.longitude);
+        animateTo(address.latitude, address.longitude, fetchAddress: false);
       }
     } else {
       _selectedAddress = address;
-      animateTo(address.latitude, address.longitude);
+      animateTo(address.latitude, address.longitude, fetchAddress: false);
     }
   }
 

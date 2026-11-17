@@ -11,6 +11,9 @@ class OrderModel {
   final int id;
   final String wasteTypeName;
   final String? subWasteTypeName;
+  final double? weight;
+  final double? amount;
+  final double? bagCharge;
   final String fullName;
   final String email;
   final String contactNumber;
@@ -37,6 +40,9 @@ class OrderModel {
     required this.id,
     this.wasteTypeName = '',
     this.subWasteTypeName,
+    this.weight,
+    this.amount,
+    this.bagCharge,
     this.fullName = '',
     this.email = '',
     this.contactNumber = '',
@@ -64,7 +70,7 @@ class OrderModel {
 
   int get count => 1;
 
-  double get weightKg => 0.0;
+  double get weightKg => weight ?? 0.0;
 
   String get displayTitle {
     if (wasteTypeName.isNotEmpty) return wasteTypeName;
@@ -153,6 +159,9 @@ class OrderModel {
         id: int.tryParse(json['id']?.toString() ?? '') ?? 0,
         wasteTypeName: json['waste_type_name']?.toString() ?? '',
         subWasteTypeName: json['sub_waste_type_name']?.toString(),
+        weight: double.tryParse(json['weight']?.toString() ?? ''),
+        amount: double.tryParse(json['amount']?.toString() ?? ''),
+        bagCharge: double.tryParse(json['bag_charge']?.toString() ?? ''),
         fullName: json['full_name']?.toString() ?? '',
         email: json['email']?.toString() ?? '',
         contactNumber: json['contact_number']?.toString() ?? '',
