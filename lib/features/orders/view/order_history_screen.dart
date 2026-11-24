@@ -247,21 +247,33 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
           ),
           SizedBox(width: 10.w),
           _buildFilterChip(
-            label: 'Completed',
-            isSelected: vm.selectedFilter == OrderStatus.completed,
-            onTap: () => vm.setFilter(OrderStatus.completed),
-          ),
-          SizedBox(width: 10.w),
-          _buildFilterChip(
             label: 'Pending',
             isSelected: vm.selectedFilter == OrderStatus.pending,
             onTap: () => vm.setFilter(OrderStatus.pending),
           ),
           SizedBox(width: 10.w),
           _buildFilterChip(
-            label: 'Cancelled',
-            isSelected: vm.selectedFilter == OrderStatus.cancelled,
-            onTap: () => vm.setFilter(OrderStatus.cancelled),
+            label: 'Accepted',
+            isSelected: vm.selectedFilter == OrderStatus.accepted,
+            onTap: () => vm.setFilter(OrderStatus.accepted),
+          ),
+          SizedBox(width: 10.w),
+          _buildFilterChip(
+            label: 'Travelling',
+            isSelected: vm.selectedFilter == OrderStatus.traveling,
+            onTap: () => vm.setFilter(OrderStatus.traveling),
+          ),
+          SizedBox(width: 10.w),
+          _buildFilterChip(
+            label: 'Rescheduled',
+            isSelected: vm.selectedFilter == OrderStatus.rescheduled,
+            onTap: () => vm.setFilter(OrderStatus.rescheduled),
+          ),
+          SizedBox(width: 10.w),
+          _buildFilterChip(
+            label: 'Completed',
+            isSelected: vm.selectedFilter == OrderStatus.completed,
+            onTap: () => vm.setFilter(OrderStatus.completed),
           ),
         ],
       ),
@@ -418,7 +430,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
             ),
             SizedBox(height: 12.h),
             _buildCompletedDetails(order),
-          ] else if (order.orderStatus == OrderStatus.pending) ...[
+          ] else if (order.orderStatus != OrderStatus.cancelled) ...[
             SizedBox(height: 14.h),
             const Divider(
               height: 1,
@@ -557,7 +569,10 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
               Navigator.pushNamed(
                 context,
                 TrackPickupScreen.routeName,
-                arguments: order.id,
+                arguments: TrackPickupScreenArgs(
+                  pickupId: order.id,
+                  orderId: order.orderId ?? order.id,
+                ),
               );
             },
           ),
@@ -623,27 +638,51 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     Color text;
     String iconEmoji;
 
-    switch (status) {
-      case OrderStatus.completed:
-        bg = const Color(0xFFE8F5E9);
-        text = const Color(0xFF1D723B);
-        iconEmoji = '✔';
-        break;
-      case OrderStatus.pending:
-        bg = const Color(0xFFFEF3C7);
-        text = const Color(0xFFD97706);
-        iconEmoji = '⏳';
-        break;
-      case OrderStatus.cancelled:
-        bg = const Color(0xFFFEE2E2);
-        text = const Color(0xFFDC2626);
-        iconEmoji = '✕';
-        break;
-      case OrderStatus.all:
-        bg = const Color(0xFFE2E8F0);
-        text = const Color(0xFF475569);
-        iconEmoji = '•';
-        break;
+    final lower = label.toLowerCase();
+    if (lower.contains('travel') ||
+        lower.contains('transit') ||
+        lower.contains('way')) {
+      bg = const Color(0xFFE0F2FE);
+      text = const Color(0xFF0284C7);
+      iconEmoji = '🚚';
+    } else {
+      switch (status) {
+        case OrderStatus.completed:
+          bg = const Color(0xFFE8F5E9);
+          text = const Color(0xFF1D723B);
+          iconEmoji = '✔';
+          break;
+        case OrderStatus.pending:
+          bg = const Color(0xFFFEF3C7);
+          text = const Color(0xFFD97706);
+          iconEmoji = '⏳';
+          break;
+        case OrderStatus.accepted:
+          bg = const Color(0xFFEFF6FF);
+          text = const Color(0xFF2563EB);
+          iconEmoji = '✓';
+          break;
+        case OrderStatus.traveling:
+          bg = const Color(0xFFE0F2FE);
+          text = const Color(0xFF0284C7);
+          iconEmoji = '🚚';
+          break;
+        case OrderStatus.rescheduled:
+          bg = const Color(0xFFFFF7ED);
+          text = const Color(0xFFEA580C);
+          iconEmoji = '🔄';
+          break;
+        case OrderStatus.cancelled:
+          bg = const Color(0xFFFEE2E2);
+          text = const Color(0xFFDC2626);
+          iconEmoji = '✕';
+          break;
+        case OrderStatus.all:
+          bg = const Color(0xFFE2E8F0);
+          text = const Color(0xFF475569);
+          iconEmoji = '•';
+          break;
+      }
     }
 
     return Container(

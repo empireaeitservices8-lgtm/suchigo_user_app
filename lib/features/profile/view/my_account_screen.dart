@@ -5,6 +5,8 @@ import 'package:suchigo_user_app/features/profile/repo/profile_repo.dart';
 import 'package:suchigo_user_app/helpers/logout_helper.dart';
 import 'package:suchigo_user_app/helpers/sp_helper.dart';
 import 'package:suchigo_user_app/services/web_api_services.dart';
+import 'package:suchigo_user_app/features/map_location/model/map_location_model.dart';
+import 'package:suchigo_user_app/features/map_location/view/map_screen.dart';
 import 'package:suchigo_user_app/utils/sp_keys.dart' as sp_keys;
 import 'package:suchigo_user_app/utils/urls.dart';
 import 'package:suchigo_user_app/widgets/custom_toast.dart';
@@ -108,8 +110,8 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
       }
 
       if (p.numberOfBags > 0) {
-        _totalWeight = p.numberOfBags * 5.0;
-        _treesSaved = (p.numberOfBags * 1.5).round();
+        _totalWeight = p.numberOfBags as double;
+        _treesSaved = (p.numberOfBags).round();
       }
     } catch (_) {}
 
@@ -134,7 +136,7 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
           if (item is Map) {
             final bags =
                 int.tryParse(item['number_of_bags']?.toString() ?? '') ?? 1;
-            calculatedWeight += (bags * 5.0);
+            calculatedWeight += (bags);
           }
         }
         if (calculatedWeight > 0) {
@@ -192,10 +194,9 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
     final lastNameCtrl = TextEditingController(text: initLast);
     final emailCtrl = TextEditingController(text: _email ?? '');
     final addressCtrl = TextEditingController(text: _address ?? '');
-    String selectedGender =
-        (_gender != null && _gender!.trim().isNotEmpty)
-            ? _gender!.trim().toLowerCase()
-            : 'female';
+    String selectedGender = (_gender != null && _gender!.trim().isNotEmpty)
+        ? _gender!.trim().toLowerCase()
+        : 'female';
     if (!['male', 'female', 'other'].contains(selectedGender)) {
       selectedGender = 'female';
     }
@@ -347,20 +348,164 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
                         SizedBox(height: 14.h),
 
                         // Email Address
-                        _buildEditField(
-                          label: 'Email Address',
-                          controller: emailCtrl,
-                          hint: 'Enter your email address',
-                          keyboardType: TextInputType.emailAddress,
-                        ),
+                        // _buildEditField(
+                        //   label: 'Email Address',
+                        //   controller: emailCtrl,
+                        //   hint: 'Enter your email address',
+                        //   keyboardType: TextInputType.emailAddress,
+                        // ),
                         SizedBox(height: 14.h),
 
                         // Address
-                        _buildEditField(
-                          label: 'Address',
-                          controller: addressCtrl,
-                          hint: 'Enter your address',
-                          maxLines: 2,
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Address',
+                              style: TextStyle(
+                                fontSize: 13.sp,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF1E293B),
+                              ),
+                            ),
+                            InkWell(
+                              onTap: () async {
+                                final result = await Navigator.pushNamed(
+                                  context,
+                                  MapScreen.routeName,
+                                );
+                                if (result != null &&
+                                    result is SelectedAddressModel) {
+                                  setSheetState(() {
+                                    addressCtrl.text = result.fullAddress;
+                                  });
+                                }
+                              },
+                              borderRadius: BorderRadius.circular(8.r),
+                              child: Padding(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 4.w,
+                                  vertical: 2.h,
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.map_outlined,
+                                      color: const Color(0xFF1D723B),
+                                      size: 15.sp,
+                                    ),
+                                    SizedBox(width: 4.w),
+                                    Text(
+                                      'Select on Map',
+                                      style: TextStyle(
+                                        fontSize: 12.sp,
+                                        fontWeight: FontWeight.w700,
+                                        color: const Color(0xFF1D723B),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 6.h),
+                        Container(
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(12.r),
+                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                          ),
+                          child: TextField(
+                            controller: addressCtrl,
+                            maxLines: 2,
+                            style: TextStyle(
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF1E293B),
+                            ),
+                            decoration: InputDecoration(
+                              hintText: 'Enter your address or select from map',
+                              hintStyle: TextStyle(
+                                fontSize: 13.5.sp,
+                                fontWeight: FontWeight.w400,
+                                color: const Color(0xFF94A3B8),
+                              ),
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: 14.w,
+                                vertical: 12.h,
+                              ),
+                              border: InputBorder.none,
+                              suffixIcon: IconButton(
+                                icon: const Icon(
+                                  Icons.my_location_rounded,
+                                  color: Color(0xFF1D723B),
+                                  size: 20,
+                                ),
+                                tooltip: 'Select from Map',
+                                onPressed: () async {
+                                  final result = await Navigator.pushNamed(
+                                    context,
+                                    MapScreen.routeName,
+                                  );
+                                  if (result != null &&
+                                      result is SelectedAddressModel) {
+                                    setSheetState(() {
+                                      addressCtrl.text = result.fullAddress;
+                                    });
+                                  }
+                                },
+                              ),
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 8.h),
+                        InkWell(
+                          onTap: () async {
+                            final result = await Navigator.pushNamed(
+                              context,
+                              MapScreen.routeName,
+                            );
+                            if (result != null &&
+                                result is SelectedAddressModel) {
+                              setSheetState(() {
+                                addressCtrl.text = result.fullAddress;
+                              });
+                            }
+                          },
+                          borderRadius: BorderRadius.circular(10.r),
+                          child: Container(
+                            width: double.infinity,
+                            padding: EdgeInsets.symmetric(vertical: 9.h),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE8F5E9),
+                              borderRadius: BorderRadius.circular(10.r),
+                              border: Border.all(
+                                color: const Color(0xFFC8E6C9),
+                                width: 1,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(
+                                  Icons.place_rounded,
+                                  color: Color(0xFF1D723B),
+                                  size: 16,
+                                ),
+                                SizedBox(width: 6.w),
+                                Text(
+                                  'Choose Location on Map',
+                                  style: TextStyle(
+                                    fontSize: 12.5.sp,
+                                    fontWeight: FontWeight.w700,
+                                    color: const Color(0xFF1D723B),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                         SizedBox(height: 22.h),
 
@@ -389,7 +534,7 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
                                         firstName: fName,
                                         lastName: lName,
                                         gender: selectedGender,
-                                        email: emailCtrl.text.trim(),
+                                        //  email: emailCtrl.text.trim(),
                                         address: addressCtrl.text.trim(),
                                       );
                                       await _profileRepo.updateProfile(
@@ -639,7 +784,7 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
                   SizedBox(height: 20.h),
 
                   // Stats Row (Pickups, Weight, Trees)
-                  _buildStatsRow(),
+                  //  _buildStatsRow(),
                   SizedBox(height: 22.h),
 
                   // Personal Details Card
@@ -864,13 +1009,13 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
           ),
         ),
         SizedBox(width: 12.w),
-        Expanded(
-          child: _buildStatCard(
-            icon: Icons.eco_rounded,
-            value: '$_treesSaved',
-            label: 'Trees Saved',
-          ),
-        ),
+        // Expanded(
+        //   child: _buildStatCard(
+        //     icon: Icons.eco_rounded,
+        //     value: '$_treesSaved',
+        //     label: 'Trees Saved',
+        //   ),
+        // ),
       ],
     );
   }
@@ -1014,11 +1159,11 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
                   padding: EdgeInsets.symmetric(vertical: 12.h),
                   child: const Divider(height: 1, color: Color(0xFFF1F5F9)),
                 ),
-                _buildDetailItem(
-                  icon: Icons.email_outlined,
-                  label: 'Email Address',
-                  value: _email!,
-                ),
+                // _buildDetailItem(
+                //   icon: Icons.email_outlined,
+                //   label: 'Email Address',
+                //   value: _email!,
+                // ),
               ],
               if (_gender != null && _gender!.isNotEmpty) ...[
                 Padding(
@@ -1038,17 +1183,63 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
     );
   }
 
+  Future<void> _updateAddressFromMap(String newAddress) async {
+    setState(() => _isLoading = true);
+    String? apiError;
+    try {
+      final req = EditProfileRequestModel(
+        firstName: _firstName,
+        lastName: _lastName,
+        gender: _gender,
+        email: _email,
+        address: newAddress,
+      );
+      await _profileRepo.updateProfile(
+        req,
+        onError: (err) {
+          apiError = err.message;
+        },
+      );
+      if (apiError != null && apiError!.isNotEmpty) {
+        if (mounted) {
+          CustomToast.show(context, message: apiError!);
+        }
+      } else {
+        setState(() {
+          _address = newAddress;
+        });
+        if (mounted) {
+          CustomToast.show(context, message: 'Address updated from map');
+        }
+      }
+    } catch (_) {
+      if (mounted) {
+        CustomToast.show(context, message: 'Failed to update address');
+      }
+    } finally {
+      // if (mounted) {
+      //   setState(() => _isLoading = false);
+      //   _fetchProfileData();
+      // }
+    }
+  }
+
   Widget _buildAddressDetailsSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Address Details',
-          style: TextStyle(
-            fontSize: 16.sp,
-            fontWeight: FontWeight.w800,
-            color: const Color(0xFF1E293B),
-          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Address Details',
+              style: TextStyle(
+                fontSize: 16.sp,
+                fontWeight: FontWeight.w800,
+                color: const Color(0xFF1E293B),
+              ),
+            ),
+          ],
         ),
         SizedBox(height: 12.h),
 
@@ -1091,13 +1282,13 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
                 padding: EdgeInsets.symmetric(vertical: 12.h),
                 child: const Divider(height: 1, color: Color(0xFFF1F5F9)),
               ),
-              _buildDetailItem(
-                icon: Icons.place_outlined,
-                label: 'Pincode',
-                value: _pincode?.isNotEmpty == true ? _pincode! : 'Add Pincode',
-                isPlaceholder: _pincode == null || _pincode!.isEmpty,
-                onTapPlaceholder: _showEditProfileSheet,
-              ),
+              // _buildDetailItem(
+              //   icon: Icons.place_outlined,
+              //   label: 'Pincode',
+              //   value: _pincode?.isNotEmpty == true ? _pincode! : 'Add Pincode',
+              //   isPlaceholder: _pincode == null || _pincode!.isEmpty,
+              //   onTapPlaceholder: _showEditProfileSheet,
+              // ),
             ],
           ),
         ),

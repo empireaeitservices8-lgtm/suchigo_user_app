@@ -4,6 +4,9 @@ enum OrderStatus {
   all,
   completed,
   pending,
+  accepted,
+  traveling,
+  rescheduled,
   cancelled,
 }
 
@@ -31,6 +34,12 @@ class OrderModel {
   final String itemsDescription;
   final String? vehicleName;
   final String? vehicleNumber;
+  final String? collectorName;
+  final String? collectorPhone;
+  final int? orderNumber;
+  final int? orderId;
+  final double? latitude;
+  final double? longitude;
   final String createdAt;
   final int? user;
   final int? wasteType;
@@ -60,13 +69,25 @@ class OrderModel {
     this.itemsDescription = '',
     this.vehicleName,
     this.vehicleNumber,
+    this.collectorName,
+    this.collectorPhone,
+    this.orderNumber,
+    this.orderId,
+    this.latitude,
+    this.longitude,
     this.createdAt = '',
     this.user,
     this.wasteType,
     this.subWasteType,
   });
 
-  String get code => 'WC-$id';
+  bool get hasCollector =>
+      collectorName != null && collectorName!.trim().isNotEmpty;
+
+  String get code {
+    final num = orderNumber ?? orderId ?? id;
+    return '$num';
+  }
 
   int get count => 1;
 
@@ -85,11 +106,13 @@ class OrderModel {
       case 3:
         return 'Recyclable Waste';
       case 4:
-        return 'E-Waste';
+        return 'Sanitary Waste';
       case 5:
         return 'General Waste';
+      case 13:
+        return 'E-Waste';
       default:
-        return itemsDescription.isNotEmpty ? itemsDescription : 'Waste Pickup';
+        return itemsDescription.isNotEmpty ? itemsDescription : 'Sanitary Waste';
     }
   }
 
@@ -131,8 +154,24 @@ class OrderModel {
 
   OrderStatus get orderStatus {
     final s = rawStatus.toLowerCase().trim();
-    if (s.contains('complete') || s.contains('done') || s.contains('collected')) {
+    if (s.contains('complete') ||
+        s.contains('done') ||
+        s.contains('collected')) {
       return OrderStatus.completed;
+    }
+    if (s.contains('travel') ||
+        s == 'in_transit' ||
+        s == 'in-transit' ||
+        s == 'transit' ||
+        s == 'on_the_way' ||
+        s == 'dispatched') {
+      return OrderStatus.traveling;
+    }
+    if (s.contains('accept')) {
+      return OrderStatus.accepted;
+    }
+    if (s.contains('reschedul')) {
+      return OrderStatus.rescheduled;
     }
     if (s.contains('cancel') || s.contains('reject')) {
       return OrderStatus.cancelled;
@@ -143,16 +182,24 @@ class OrderModel {
   OrderStatus get status => orderStatus;
 
   String get statusLabel {
-    switch (orderStatus) {
-      case OrderStatus.completed:
-        return 'completed';
-      case OrderStatus.pending:
-        return rawStatus.isNotEmpty ? rawStatus.toLowerCase() : 'pending';
-      case OrderStatus.cancelled:
-        return 'cancelled';
-      case OrderStatus.all:
-        return 'all';
+    final s = rawStatus.toLowerCase().trim();
+    if (s.isEmpty) return 'Pending';
+    if (s.contains('travel')) {
+      return 'Travelling';
     }
+    if (s == 'in_transit' ||
+        s == 'in-transit' ||
+        s == 'transit' ||
+        s == 'on_the_way' ||
+        s == 'dispatched') {
+      return 'In Transit';
+    }
+    if (s.contains('accept')) return 'Accepted';
+    if (s.contains('reschedul')) return 'Rescheduled';
+    if (s == 'completed' || s == 'collected') return 'Completed';
+    if (s == 'cancelled' || s == 'rejected') return 'Cancelled';
+    if (s == 'pending') return 'Pending';
+    return s[0].toUpperCase() + s.substring(1);
   }
 
   factory OrderModel.fromJson(Map<dynamic, dynamic> json) => OrderModel(
@@ -179,9 +226,51 @@ class OrderModel {
         itemsDescription: json['items_description']?.toString() ?? '',
         vehicleName: json['vehicle_name']?.toString(),
         vehicleNumber: json['vehicle_number']?.toString(),
+        collectorName: json['collector_name']?.toString(),
+        collectorPhone: json['collector_phone']?.toString(),
+        orderNumber: int.tryParse(json['order_number']?.toString() ?? ''),
+        orderId: int.tryParse(json['order_id']?.toString() ?? ''),
+        latitude: double.tryParse(json['latitude']?.toString() ?? ''),
+        longitude: double.tryParse(json['longitude']?.toString() ?? ''),
         createdAt: json['created_at']?.toString() ?? '',
         user: int.tryParse(json['user']?.toString() ?? ''),
         wasteType: int.tryParse(json['waste_type']?.toString() ?? ''),
         subWasteType: int.tryParse(json['sub_waste_type']?.toString() ?? ''),
       );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'waste_type_name': wasteTypeName,
+        'sub_waste_type_name': subWasteTypeName,
+        'weight': weight,
+        'amount': amount,
+        'bag_charge': bagCharge,
+        'full_name': fullName,
+        'email': email,
+        'contact_number': contactNumber,
+        'street': street,
+        'city': city,
+        'zip_code': zipCode,
+        'state': state,
+        'district': district,
+        'localbody': localbody,
+        'ward_name': wardName,
+        'landmark': landmark,
+        'pickup_date': pickupDate,
+        'pickup_time_slot': pickupTimeSlot,
+        'status': rawStatus,
+        'items_description': itemsDescription,
+        'vehicle_name': vehicleName,
+        'vehicle_number': vehicleNumber,
+        'collector_name': collectorName,
+        'collector_phone': collectorPhone,
+        'order_number': orderNumber,
+        'order_id': orderId,
+        'latitude': latitude,
+        'longitude': longitude,
+        'created_at': createdAt,
+        'user': user,
+        'waste_type': wasteType,
+        'sub_waste_type': subWasteType,
+      };
 }

@@ -6,6 +6,8 @@ class PickupLocationCard extends StatelessWidget {
   final TextEditingController stateController;
   final TextEditingController zipCodeController;
   final VoidCallback onSelectOnMap;
+  final double? latitude;
+  final double? longitude;
 
   const PickupLocationCard({
     super.key,
@@ -13,6 +15,8 @@ class PickupLocationCard extends StatelessWidget {
     required this.stateController,
     required this.zipCodeController,
     required this.onSelectOnMap,
+    this.latitude,
+    this.longitude,
   });
 
   @override
@@ -90,6 +94,7 @@ class PickupLocationCard extends StatelessWidget {
               ),
             ),
           ),
+
           SizedBox(height: 18.h),
 
           // Pickup Address Field
@@ -179,8 +184,8 @@ class PickupLocationCard extends StatelessWidget {
           ),
           SizedBox(height: 16.h),
 
-          // Zip / Postal Code Field
-          _buildFieldLabel('Zip / Postal Code', isRequired: true),
+          // Zip / Postal Code Field (Optional)
+          _buildFieldLabel('Zip / Postal Code (Optional)', isRequired: false),
           SizedBox(height: 6.h),
           Container(
             decoration: BoxDecoration(
@@ -200,7 +205,7 @@ class PickupLocationCard extends StatelessWidget {
                 color: const Color(0xFF1E293B),
               ),
               decoration: InputDecoration(
-                hintText: 'Enter zip code',
+                hintText: 'Enter zip code (optional)',
                 hintStyle: TextStyle(
                   fontSize: 13.5.sp,
                   fontWeight: FontWeight.w400,

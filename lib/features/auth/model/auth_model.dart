@@ -100,6 +100,7 @@ class OTPVerificationModel {
   final bool isRegistered;
   final bool needsRegistration;
   final bool canLogin;
+  final int? userId;
 
   const OTPVerificationModel({
     this.message = '',
@@ -111,6 +112,7 @@ class OTPVerificationModel {
     this.isRegistered = true,
     this.needsRegistration = false,
     this.canLogin = true,
+    this.userId,
   });
 
   bool get shouldRegister => needsRegistration || !isRegistered;
@@ -127,7 +129,23 @@ class OTPVerificationModel {
 
     // When needs_registration is explicitly true or is_registered is explicitly false
     final bool finalIsRegistered = !needsReg &&
-        (isReg || (json['is_registered'] == null && !json.containsKey('error')));
+        (isReg ||
+            (json['is_registered'] == null && !json.containsKey('error')));
+
+    final rawUserId = json['user_id'] ??
+        json['userId'] ??
+        json['id'] ??
+        (json['user'] is Map
+            ? json['user']['id'] ?? json['user']['user_id']
+            : null) ??
+        (json['data'] is Map
+            ? json['data']['user_id'] ??
+                json['data']['id'] ??
+                (json['data']['user'] is Map
+                    ? json['data']['user']['id']
+                    : null)
+            : null);
+    final int? parsedUserId = int.tryParse(rawUserId?.toString() ?? '');
 
     return OTPVerificationModel(
       message: json['message']?.toString() ?? json['error']?.toString() ?? '',
@@ -138,6 +156,7 @@ class OTPVerificationModel {
       isRegistered: finalIsRegistered,
       needsRegistration: needsReg || !finalIsRegistered,
       canLogin: canLog,
+      userId: parsedUserId,
       isVerified: json['error'] == null &&
           (json['message']?.toString().toLowerCase().contains('success') ==
                   true ||
@@ -202,27 +221,41 @@ class LoginResponseModel {
 
   bool get hasToken => token != null && token!.isNotEmpty;
 
-  factory LoginResponseModel.fromJson(Map<dynamic, dynamic> json) =>
-      LoginResponseModel(
-        token: json['token']?.toString(),
-        userId: int.tryParse(json['user_id']?.toString() ?? ''),
-        username: json['username']?.toString(),
-        email: json['email']?.toString(),
-        phoneNumber: json['phone_number']?.toString(),
-        firstName: json['first_name']?.toString(),
-        lastName: json['last_name']?.toString(),
-        canAccessApp: json['can_access_app'] == null ||
-            json['can_access_app'] == true ||
-            json['can_access_app']?.toString().toLowerCase() == 'true',
-        message: json['message']?.toString(),
-        error: json['error']?.toString(),
-        isRegistered: json['is_registered'] == true ||
-            json['is_registered']?.toString().toLowerCase() == 'true' ||
-            (json['is_registered'] == null && !json.containsKey('error')),
-      );
+  factory LoginResponseModel.fromJson(Map<dynamic, dynamic> json) {
+    final rawUserId = json['user_id'] ??
+        json['userId'] ??
+        json['id'] ??
+        (json['user'] is Map
+            ? json['user']['id'] ?? json['user']['user_id']
+            : null) ??
+        (json['data'] is Map
+            ? json['data']['user_id'] ??
+                json['data']['id'] ??
+                (json['data']['user'] is Map
+                    ? json['data']['user']['id']
+                    : null)
+            : null);
 
-  String get fullName =>
-      '${firstName ?? ''} ${lastName ?? ''}'.trim();
+    return LoginResponseModel(
+      token: json['token']?.toString(),
+      userId: int.tryParse(rawUserId?.toString() ?? ''),
+      username: json['username']?.toString(),
+      email: json['email']?.toString(),
+      phoneNumber: json['phone_number']?.toString(),
+      firstName: json['first_name']?.toString(),
+      lastName: json['last_name']?.toString(),
+      canAccessApp: json['can_access_app'] == null ||
+          json['can_access_app'] == true ||
+          json['can_access_app']?.toString().toLowerCase() == 'true',
+      message: json['message']?.toString(),
+      error: json['error']?.toString(),
+      isRegistered: json['is_registered'] == true ||
+          json['is_registered']?.toString().toLowerCase() == 'true' ||
+          (json['is_registered'] == null && !json.containsKey('error')),
+    );
+  }
+
+  String get fullName => '${firstName ?? ''} ${lastName ?? ''}'.trim();
 }
 
 class CompleteProfileRequestModel {
@@ -285,16 +318,31 @@ class UserProfileModel {
     required this.lastName,
   });
 
-  factory UserProfileModel.fromJson(Map<dynamic, dynamic> json) =>
-      UserProfileModel(
-        token: json['token']?.toString() ?? '',
-        userId: int.tryParse(json['user_id']?.toString() ?? ''),
-        username: json['username']?.toString(),
-        email: json['email']?.toString() ?? '',
-        phoneNumber: json['phone_number']?.toString() ?? '',
-        firstName: json['first_name']?.toString() ?? '',
-        lastName: json['last_name']?.toString() ?? '',
-      );
+  factory UserProfileModel.fromJson(Map<dynamic, dynamic> json) {
+    final rawUserId = json['user_id'] ??
+        json['userId'] ??
+        json['id'] ??
+        (json['user'] is Map
+            ? json['user']['id'] ?? json['user']['user_id']
+            : null) ??
+        (json['data'] is Map
+            ? json['data']['user_id'] ??
+                json['data']['id'] ??
+                (json['data']['user'] is Map
+                    ? json['data']['user']['id']
+                    : null)
+            : null);
+
+    return UserProfileModel(
+      token: json['token']?.toString() ?? '',
+      userId: int.tryParse(rawUserId?.toString() ?? ''),
+      username: json['username']?.toString(),
+      email: json['email']?.toString() ?? '',
+      phoneNumber: json['phone_number']?.toString() ?? '',
+      firstName: json['first_name']?.toString() ?? '',
+      lastName: json['last_name']?.toString() ?? '',
+    );
+  }
 
   String get fullName => '$firstName $lastName'.trim();
 }

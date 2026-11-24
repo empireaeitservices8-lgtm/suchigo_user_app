@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:suchigo_user_app/helpers/sp_helper.dart';
 import 'package:suchigo_user_app/utils/sp_keys.dart' as sp_keys;
 import 'package:suchigo_user_app/widgets/custom_toast.dart';
@@ -1094,28 +1095,43 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
               label: 'Facebook',
               color: const Color(0xFF1877F2),
               bgColor: const Color(0xFFE3F2FD),
-              onTap: () => _openUrl('https://facebook.com'),
+              onTap: () => _openUrl('https://www.facebook.com/p/SuchiGo-61578070650428/'),
             ),
             _buildSocialItem(
-              icon: Icons.alternate_email_rounded,
-              label: 'Twitter',
-              color: const Color(0xFF00ACC1),
-              bgColor: const Color(0xFFE0F7FA),
-              onTap: () => _openUrl('https://twitter.com'),
-            ),
-            _buildSocialItem(
+              customIcon: SvgPicture.string(
+                '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
+<path d="M224.1 141c-63.6 0-114.9 51.3-114.9 114.9s51.3 114.9 114.9 114.9S339 319.5 339 255.9 287.7 141 224.1 141zm0 189.6c-41.1 0-74.7-33.5-74.7-74.7s33.5-74.7 74.7-74.7 74.7 33.5 74.7 74.7-33.6 74.7-74.7 74.7zm146.4-194.3c0 14.9-12 26.8-26.8 26.8-14.9 0-26.8-12-26.8-26.8s12-26.8 26.8-26.8 26.8 12 26.8 26.8zm76.1 27.2c-1.7-35.9-9.9-67.7-36.2-93.9-26.2-26.2-58-34.4-93.9-36.2-37-2.1-147.9-2.1-184.9 0-35.8 1.7-67.6 9.9-93.9 36.1s-34.4 58-36.2 93.9c-2.1 37-2.1 147.9 0 184.9 1.7 35.9 9.9 67.7 36.2 93.9s58 34.4 93.9 36.2c37 2.1 147.9 2.1 184.9 0 35.9-1.7 67.7-9.9 93.9-36.2 26.2-26.2 34.4-58 36.2-93.9 2.1-37 2.1-147.8 0-184.8zM398.8 388c-7.8 19.6-22.9 34.7-42.6 42.6-29.5 11.7-99.5 9-132.1 9s-102.7 2.6-132.1-9c-19.6-7.8-34.7-22.9-42.6-42.6-11.7-29.5-9-99.5-9-132.1s-2.6-102.7 9-132.1c7.8-19.6 22.9-34.7 42.6-42.6 29.5-11.7 99.5-9 132.1-9s102.7-2.6 132.1 9c19.6 7.8 34.7 22.9 42.6 42.6 11.7 29.5 9 99.5 9 132.1s2.7 102.7-9 132.1z"/>
+</svg>''',
+                width: 22.sp,
+                height: 22.sp,
+                colorFilter: const ColorFilter.mode(
+                  Color(0xFFE91E63),
+                  BlendMode.srcIn,
+                ),
+              ),
               icon: Icons.camera_alt_rounded,
               label: 'Instagram',
               color: const Color(0xFFE91E63),
               bgColor: const Color(0xFFFCE4EC),
-              onTap: () => _openUrl('https://instagram.com'),
+              onTap: () => _openUrl('https://www.instagram.com/suchigo_?dmpr=NWo5bnI2NnBucWlk'),
             ),
             _buildSocialItem(
-              icon: Icons.play_circle_fill_rounded,
-              label: 'YouTube',
-              color: const Color(0xFFD32F2F),
-              bgColor: const Color(0xFFFFEBEE),
-              onTap: () => _openUrl('https://youtube.com'),
+              customIcon: SvgPicture.string(
+                '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
+<path d="M100.28 448H7.4V148.9h92.88zM53.79 108.1C24.09 108.1 0 83.5 0 53.8a53.79 53.79 0 0 1 107.58 0c0 29.7-24.1 54.3-53.79 54.3zM447.9 448h-92.68V302.4c0-34.7-.7-79.2-48.29-79.2-48.3 0-55.7 37.7-55.7 76.7V448h-92.78V148.9h89.08v40.8h1.3c12.4-23.5 42.7-48.3 87.9-48.3 94 0 111.3 61.9 111.3 142.3V448z"/>
+</svg>''',
+                width: 20.sp,
+                height: 20.sp,
+                colorFilter: const ColorFilter.mode(
+                  Color(0xFF0A66C2),
+                  BlendMode.srcIn,
+                ),
+              ),
+              icon: Icons.business_center_rounded,
+              label: 'LinkedIn',
+              color: const Color(0xFF0A66C2),
+              bgColor: const Color(0xFFE8F4F8),
+              onTap: () => _openUrl('https://www.linkedin.com/company/suchigo/'),
             ),
           ],
         ),
@@ -1124,7 +1140,8 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
   }
 
   Widget _buildSocialItem({
-    required IconData icon,
+    IconData? icon,
+    Widget? customIcon,
     required String label,
     required Color color,
     required Color bgColor,
@@ -1143,11 +1160,14 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
               shape: BoxShape.circle,
             ),
             child: Center(
-              child: Icon(
-                icon,
-                color: color,
-                size: 24.sp,
-              ),
+              child: customIcon ??
+                  (icon != null
+                      ? Icon(
+                          icon,
+                          color: color,
+                          size: 24.sp,
+                        )
+                      : const SizedBox.shrink()),
             ),
           ),
           SizedBox(height: 6.h),

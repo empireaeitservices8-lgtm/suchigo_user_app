@@ -4,6 +4,7 @@ import '../../model/schedule_pickup_model.dart';
 
 class JurisdictionCard extends StatelessWidget {
   final JurisdictionModel jurisdiction;
+  final String? wasteTypeName;
   final VoidCallback onSelectDistrict;
   final VoidCallback onSelectLocalBody;
   final VoidCallback onSelectWard;
@@ -11,6 +12,7 @@ class JurisdictionCard extends StatelessWidget {
   const JurisdictionCard({
     super.key,
     required this.jurisdiction,
+    this.wasteTypeName,
     required this.onSelectDistrict,
     required this.onSelectLocalBody,
     required this.onSelectWard,
@@ -35,6 +37,67 @@ class JurisdictionCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Selected Waste Category Banner
+          Row(
+            children: [
+              Container(
+                width: 32.w,
+                height: 32.w,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE8F6EF),
+                  borderRadius: BorderRadius.circular(8.r),
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.baby_changing_station,
+                    color: Color(0xFF166534),
+                    size: 18,
+                  ),
+                ),
+              ),
+              SizedBox(width: 10.w),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Selected Waste Category',
+                    style: TextStyle(
+                      fontSize: 11.sp,
+                      fontWeight: FontWeight.w500,
+                      color: const Color(0xFF94A3B8),
+                    ),
+                  ),
+                  SizedBox(height: 2.h),
+                  Text(
+                    wasteTypeName ?? 'Sanitary Waste',
+                    style: TextStyle(
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF166534),
+                    ),
+                  ),
+                ],
+              ),
+              const Spacer(),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE8F5E9),
+                  borderRadius: BorderRadius.circular(12.r),
+                ),
+                child: Text(
+                  'Selected',
+                  style: TextStyle(
+                    fontSize: 11.sp,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF166534),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          _buildDivider(),
+
           // District Field
           _buildDropdownRow(
             icon: Icons.landscape_outlined,

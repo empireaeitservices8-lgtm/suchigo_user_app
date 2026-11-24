@@ -116,8 +116,22 @@ class OrderRepositoryImpl implements OrderRepository {
       if (response.data is Map) {
         return PickupVehicleTrackingModel.fromJson(response.data as Map);
       }
-      return null;
     } on DioException catch (e) {
+      // If pickup-vehicle-tracking fails, attempt fallback to fetching matching pickup from urlPickups
+      try {
+        final pickupsRes = await _apiService.dio.get(urlPickups);
+        if (pickupsRes.data is List) {
+          for (final item in (pickupsRes.data as List)) {
+            if (item is Map &&
+                (item['id'] == pickupId ||
+                    item['order_id'] == pickupId ||
+                    item['order_number'] == pickupId)) {
+              return PickupVehicleTrackingModel.fromJson(item);
+            }
+          }
+        }
+      } catch (_) {}
+
       if (onError != null) {
         final errorMsg = e.response?.data is Map
             ? (e.response?.data['message']?.toString() ??
@@ -134,5 +148,6 @@ class OrderRepositoryImpl implements OrderRepository {
       }
       return null;
     }
+    return null;
   }
 }

@@ -37,20 +37,75 @@ Map<String, Widget Function(BuildContext context)> appRoutes() => {
         final String? initialCatId = args is String ? args : null;
         return WasteDetailsScreen(initialCategoryId: initialCatId);
       },
-      SchedulePickupScreen.routeName: (context) => const SchedulePickupScreen(),
+      SchedulePickupScreen.routeName: (context) {
+        final args = ModalRoute.of(context)?.settings.arguments;
+        int? wasteType;
+        String? wasteTypeName;
+        int? subWasteType;
+        if (args is Map) {
+          wasteType = int.tryParse(args['wasteType']?.toString() ?? '') ??
+              int.tryParse(args['waste_type']?.toString() ?? '');
+          wasteTypeName = args['wasteTypeName']?.toString() ??
+              args['waste_type_name']?.toString();
+          subWasteType = int.tryParse(args['subWasteType']?.toString() ?? '') ??
+              int.tryParse(args['sub_waste_type']?.toString() ?? '');
+        } else if (args is int) {
+          wasteType = args;
+        }
+        return SchedulePickupScreen(
+          initialWasteType: wasteType,
+          initialWasteTypeName: wasteTypeName,
+          initialSubWasteType: subWasteType,
+        );
+      },
       MapScreen.routeName: (context) => const MapScreen(),
       BookingConfirmedScreen.routeName: (context) {
         final args = ModalRoute.of(context)?.settings.arguments;
-        final bookingData =
-            args is BookingConfirmedModel ? args : null;
+        BookingConfirmedModel? bookingData;
+        if (args is BookingConfirmedModel) {
+          bookingData = args;
+        } else if (args is Map) {
+          bookingData = BookingConfirmedModel.fromJson(args);
+        } else if (args is int) {
+          bookingData = BookingConfirmedModel(
+            bookingId: args.toString(),
+            orderId: args.toString(),
+            pickupId: args,
+          );
+        } else if (args is String) {
+          final clean = args.replaceAll('#', '').trim();
+          bookingData = BookingConfirmedModel(
+            bookingId: clean,
+            orderId: clean,
+          );
+        }
         return BookingConfirmedScreen(bookingData: bookingData);
       },
       WalletScreen.routeName: (context) => const WalletScreen(),
       OrderHistoryScreen.routeName: (context) => const OrderHistoryScreen(),
       TrackPickupScreen.routeName: (context) {
         final args = ModalRoute.of(context)?.settings.arguments;
-        final int pickupId = args is int ? args : 140;
-        return TrackPickupScreen(pickupId: pickupId);
+        if (args is TrackPickupScreenArgs) {
+          return TrackPickupScreen(
+            pickupId: args.pickupId,
+            orderId: args.orderId,
+          );
+        } else if (args is Map) {
+          final int pickupId = int.tryParse(args['pickupId']?.toString() ?? '') ??
+              int.tryParse(args['pickup_id']?.toString() ?? '') ??
+              int.tryParse(args['id']?.toString() ?? '') ??
+              140;
+          final int? orderId = int.tryParse(args['orderId']?.toString() ?? '') ??
+              int.tryParse(args['order_id']?.toString() ?? '') ??
+              int.tryParse(args['order_number']?.toString() ?? '');
+          return TrackPickupScreen(
+            pickupId: pickupId,
+            orderId: orderId,
+          );
+        } else if (args is int) {
+          return TrackPickupScreen(pickupId: args);
+        }
+        return const TrackPickupScreen(pickupId: 140);
       },
       BillsReceivedScreen.routeName: (context) => const BillsReceivedScreen(),
       MyRewardsScreen.routeName: (context) => const MyRewardsScreen(),
@@ -81,16 +136,56 @@ Widget? _getScreen(RouteSettings settings) {
         otp: args.otp,
       );
     case ConnectionFailedScreen.routeName:
-      ConnectionFailedScreenParams params =
-          settings.arguments as ConnectionFailedScreenParams;
+      final params = settings.arguments is ConnectionFailedScreenParams
+          ? settings.arguments as ConnectionFailedScreenParams
+          : ConnectionFailedScreenParams();
       return ConnectionFailedScreen(
         param: params,
       );
     case BookingConfirmedScreen.routeName:
-      final bookingData = settings.arguments is BookingConfirmedModel
-          ? settings.arguments as BookingConfirmedModel
-          : null;
+      final args = settings.arguments;
+      BookingConfirmedModel? bookingData;
+      if (args is BookingConfirmedModel) {
+        bookingData = args;
+      } else if (args is Map) {
+        bookingData = BookingConfirmedModel.fromJson(args);
+      } else if (args is int) {
+        bookingData = BookingConfirmedModel(
+          bookingId: args.toString(),
+          orderId: args.toString(),
+          pickupId: args,
+        );
+      } else if (args is String) {
+        final clean = args.replaceAll('#', '').trim();
+        bookingData = BookingConfirmedModel(
+          bookingId: clean,
+          orderId: clean,
+        );
+      }
       return BookingConfirmedScreen(bookingData: bookingData);
+    case TrackPickupScreen.routeName:
+      final args = settings.arguments;
+      if (args is TrackPickupScreenArgs) {
+        return TrackPickupScreen(
+          pickupId: args.pickupId,
+          orderId: args.orderId,
+        );
+      } else if (args is Map) {
+        final int pickupId = int.tryParse(args['pickupId']?.toString() ?? '') ??
+            int.tryParse(args['pickup_id']?.toString() ?? '') ??
+            int.tryParse(args['id']?.toString() ?? '') ??
+            140;
+        final int? orderId = int.tryParse(args['orderId']?.toString() ?? '') ??
+            int.tryParse(args['order_id']?.toString() ?? '') ??
+            int.tryParse(args['order_number']?.toString() ?? '');
+        return TrackPickupScreen(
+          pickupId: pickupId,
+          orderId: orderId,
+        );
+      } else if (args is int) {
+        return TrackPickupScreen(pickupId: args);
+      }
+      return const TrackPickupScreen(pickupId: 140);
     // case OwnerManageUserScreen.route:
     //   OwnerManageUserScreenParams params =
     //       settings.arguments as OwnerManageUserScreenParams;

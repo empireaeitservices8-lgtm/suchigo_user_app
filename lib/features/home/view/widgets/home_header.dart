@@ -7,8 +7,8 @@ class HomeHeader extends StatelessWidget {
 
   const HomeHeader({
     super.key,
-    this.userName = 'USER',
-    this.progress = 0.65,
+    this.userName = '',
+    this.progress = 0.0,
   });
 
   @override
@@ -71,24 +71,24 @@ class HomeHeader extends StatelessWidget {
                   ),
                   SizedBox(height: 4.h),
                   // Progress Bar
-                  Container(
-                    width: 75.w,
-                    height: 4.h,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.35),
-                      borderRadius: BorderRadius.circular(3.r),
-                    ),
-                    child: FractionallySizedBox(
-                      alignment: Alignment.centerLeft,
-                      widthFactor: progress.clamp(0.0, 1.0),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(3.r),
-                        ),
-                      ),
-                    ),
-                  ),
+                  // Container(
+                  //   width: 75.w,
+                  //   height: 4.h,
+                  //   decoration: BoxDecoration(
+                  //     color: Colors.white.withValues(alpha: 0.35),
+                  //     borderRadius: BorderRadius.circular(3.r),
+                  //   ),
+                  //   child: FractionallySizedBox(
+                  //     alignment: Alignment.centerLeft,
+                  //     widthFactor: progress.clamp(0.0, 1.0),
+                  //     child: Container(
+                  //       decoration: BoxDecoration(
+                  //         color: Colors.white,
+                  //         borderRadius: BorderRadius.circular(3.r),
+                  //       ),
+                  //     ),
+                  //   ),
+                  // ),
                 ],
               ),
             ),

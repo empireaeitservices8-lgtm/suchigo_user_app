@@ -20,11 +20,13 @@ class WalletViewModel extends ViewModel {
   List<WalletTransactionModel> get transactions => _walletData.transactions;
   String? get errorMessage => _errorMessage;
 
-  void loadWalletData() async {
+  void loadWalletData({String? userId}) async {
     isLoading = true;
     _errorMessage = null;
+    notifyListeners();
     try {
       _walletData = await _repository.getWalletData(
+        userId: userId,
         onError: (error) {
           _errorMessage = error.message;
         },

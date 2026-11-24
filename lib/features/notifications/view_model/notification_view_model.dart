@@ -52,15 +52,8 @@ class NotificationViewModel extends ViewModel {
     await _repository.markAsRead(id);
     final index = _allNotifications.indexWhere((item) => item.id == id);
     if (index != -1) {
-      final updatedItem = NotificationItemModel(
-        id: _allNotifications[index].id,
-        title: _allNotifications[index].title,
-        message: _allNotifications[index].message,
-        dateTime: _allNotifications[index].dateTime,
-        type: _allNotifications[index].type,
-        isRead: true,
-      );
-      _allNotifications[index] = updatedItem;
+      _allNotifications[index] =
+          _allNotifications[index].copyWith(isRead: true);
       notifyListeners();
     }
   }

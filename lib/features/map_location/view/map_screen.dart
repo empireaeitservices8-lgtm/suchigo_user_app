@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:suchigo_user_app/helpers/sp_helper.dart';
 import '../view_model/map_location_view_model.dart';
 
 class MapScreen extends StatefulWidget {
@@ -80,56 +81,67 @@ class _MapScreenState extends State<MapScreen> {
                 // 2. Center Pin Marker & Tooltip (Transparent to touch gestures)
                 Center(
                   child: IgnorePointer(
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 120),
-                      transform: Matrix4.translationValues(
-                          0, _isDragging ? -14.h : 0, 0),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 14.w,
-                              vertical: 6.h,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF263238),
-                              borderRadius: BorderRadius.circular(16.r),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.3),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 3),
+                    child: Stack(
+                      alignment: Alignment.center,
+                      clipBehavior: Clip.none,
+                      children: [
+                        // Ground contact target shadow dot positioned at the exact map center
+                        Container(
+                          width: 10.w,
+                          height: 5.h,
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.35),
+                            borderRadius: BorderRadius.circular(10.r),
+                          ),
+                        ),
+                        // Animated Pin + Tooltip lifting during drag, resting on ground dot when idle
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 140),
+                          curve: Curves.easeOutCubic,
+                          transform: Matrix4.translationValues(
+                            0,
+                            _isDragging ? -37.h : -23.h,
+                            0,
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 14.w,
+                                  vertical: 6.h,
                                 ),
-                              ],
-                            ),
-                            child: Text(
-                              'Move map to place pin',
-                              style: TextStyle(
-                                fontSize: 12.sp,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF263238),
+                                  borderRadius: BorderRadius.circular(16.r),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color:
+                                          Colors.black.withValues(alpha: 0.3),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 3),
+                                    ),
+                                  ],
+                                ),
+                                child: Text(
+                                  'Move map to place pin',
+                                  style: TextStyle(
+                                    fontSize: 12.sp,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
+                                ),
                               ),
-                            ),
-                          ),
-                          SizedBox(height: 4.h),
-                          const Icon(
-                            Icons.location_on_rounded,
-                            color: Color(0xFFEF4444),
-                            size: 46,
-                          ),
-                          if (_isDragging)
-                            Container(
-                              width: 8.w,
-                              height: 4.h,
-                              decoration: BoxDecoration(
-                                color: Colors.black.withValues(alpha: 0.25),
-                                borderRadius: BorderRadius.circular(4.r),
+                              SizedBox(height: 4.h),
+                              const Icon(
+                                Icons.location_on_rounded,
+                                color: Color(0xFFEF4444),
+                                size: 46,
                               ),
-                            ),
-                          SizedBox(height: 38.h),
-                        ],
-                      ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -207,8 +219,7 @@ class _MapScreenState extends State<MapScreen> {
                                   color: const Color(0xFF1E293B),
                                 ),
                                 decoration: const InputDecoration(
-                                  hintText:
-                                      'Search city, area or landmark...',
+                                  hintText: 'Search city, area or landmark...',
                                   hintStyle: TextStyle(
                                     fontSize: 13.5,
                                     color: Color(0xFF94A3B8),
@@ -316,7 +327,8 @@ class _MapScreenState extends State<MapScreen> {
                     child: Material(
                       color: Colors.transparent,
                       child: InkWell(
-                        onTap: () => vm.moveToCurrentLocation(),
+                        onTap: () =>
+                            vm.moveToCurrentLocation(showToastOnError: true),
                         borderRadius: BorderRadius.circular(14.r),
                         child: Padding(
                           padding: EdgeInsets.all(12.w),
@@ -424,17 +436,17 @@ class _MapScreenState extends State<MapScreen> {
                               height: 1.35,
                             ),
                           ),
-                          SizedBox(height: 4.h),
+                          // SizedBox(height: 4.h),
 
-                          // Coordinates: Lat / Lng
-                          Text(
-                            'Lat: ${vm.currentLat.toStringAsFixed(5)}, Lng: ${vm.currentLng.toStringAsFixed(5)}',
-                            style: TextStyle(
-                              fontSize: 12.sp,
-                              fontWeight: FontWeight.w500,
-                              color: const Color(0xFF64748B),
-                            ),
-                          ),
+                          // // Coordinates: Lat / Lng
+                          // Text(
+                          //   'Lat: ${vm.currentLat.toStringAsFixed(5)}, Lng: ${vm.currentLng.toStringAsFixed(5)}',
+                          //   style: TextStyle(
+                          //     fontSize: 12.sp,
+                          //     fontWeight: FontWeight.w500,
+                          //     color: const Color(0xFF64748B),
+                          //   ),
+                          // ),
                           SizedBox(height: 18.h),
 
                           // Confirm Button
@@ -444,6 +456,22 @@ class _MapScreenState extends State<MapScreen> {
                             child: ElevatedButton(
                               onPressed: vm.selectedAddress != null
                                   ? () {
+                                      try {
+                                        SpHelper.saveString(
+                                          'KEY_LAST_LATITUDE',
+                                          vm.selectedAddress!.latitude
+                                              .toString(),
+                                        );
+                                        SpHelper.saveString(
+                                          'KEY_LAST_LONGITUDE',
+                                          vm.selectedAddress!.longitude
+                                              .toString(),
+                                        );
+                                        SpHelper.saveString(
+                                          'KEY_LAST_ADDRESS',
+                                          vm.selectedAddress!.fullAddress,
+                                        );
+                                      } catch (_) {}
                                       Navigator.pop(
                                         context,
                                         vm.selectedAddress,
@@ -489,8 +517,3 @@ class _MapScreenState extends State<MapScreen> {
     super.dispose();
   }
 }
-
-
-
-
-

@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import 'package:suchigo_user_app/features/bills/view/bills_received_screen.dart';
+import 'package:suchigo_user_app/features/map_location/model/map_location_model.dart';
+import 'package:suchigo_user_app/features/map_location/view/map_screen.dart';
 import 'package:suchigo_user_app/features/orders/view/order_history_screen.dart';
 import 'package:suchigo_user_app/features/profile/model/profile_model.dart';
 import 'package:suchigo_user_app/features/profile/view_model/profile_view_model.dart';
 import 'package:suchigo_user_app/features/wallet/view/wallet_screen.dart';
+import 'package:suchigo_user_app/widgets/custom_toast.dart';
 
 import 'package:suchigo_user_app/features/profile/view/my_account_screen.dart';
 import 'package:suchigo_user_app/features/rewards/view/my_rewards_screen.dart';
@@ -84,10 +87,8 @@ class _ProfileViewState extends State<ProfileView> {
                           // Top Stats Card (Bags Recycled & Wallet Balance)
                           _buildStatsCard(),
 
-                          if (displayAddress.isNotEmpty) ...[
-                            SizedBox(height: 14.h),
-                            _buildAddressCard(displayAddress),
-                          ],
+                          SizedBox(height: 14.h),
+                          // _buildAddressCard(context, vm, displayAddress),
 
                           SizedBox(height: 16.h),
 
@@ -257,7 +258,12 @@ class _ProfileViewState extends State<ProfileView> {
     );
   }
 
-  Widget _buildAddressCard(String address) {
+  Widget _buildAddressCard(
+    BuildContext context,
+    ProfileViewModel vm,
+    String address,
+  ) {
+    final hasAddress = address.trim().isNotEmpty;
     return Container(
       width: double.infinity,
       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
@@ -277,8 +283,8 @@ class _ProfileViewState extends State<ProfileView> {
         children: [
           Container(
             padding: EdgeInsets.all(8.w),
-            decoration: BoxDecoration(
-              color: const Color(0xFFE8F5E9),
+            decoration: const BoxDecoration(
+              color: Color(0xFFE8F5E9),
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -292,21 +298,73 @@ class _ProfileViewState extends State<ProfileView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Address',
-                  style: TextStyle(
-                    fontSize: 12.sp,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFF64748B),
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Address',
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF64748B),
+                      ),
+                    ),
+                    InkWell(
+                      onTap: () async {
+                        final result = await Navigator.pushNamed(
+                          context,
+                          MapScreen.routeName,
+                        );
+                        if (result != null && result is SelectedAddressModel) {
+                          final ok = await vm.updateAddress(result.fullAddress);
+                          if (context.mounted && ok) {
+                            CustomToast.show(
+                              context,
+                              message: 'Address updated from map',
+                            );
+                          }
+                        }
+                      },
+                      borderRadius: BorderRadius.circular(8.r),
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 4.w,
+                          vertical: 2.h,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.edit_location_alt_outlined,
+                              color: const Color(0xFF166534),
+                              size: 14.sp,
+                            ),
+                            SizedBox(width: 3.w),
+                            Text(
+                              hasAddress ? 'Change on Map' : 'Set from Map',
+                              style: TextStyle(
+                                fontSize: 11.5.sp,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF166534),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                SizedBox(height: 2.h),
+                SizedBox(height: 4.h),
                 Text(
-                  address,
+                  hasAddress
+                      ? address
+                      : 'No address set. Tap to select from map.',
                   style: TextStyle(
-                    fontSize: 14.sp,
+                    fontSize: 13.5.sp,
                     fontWeight: FontWeight.w600,
-                    color: const Color(0xFF1E293B),
+                    color: hasAddress
+                        ? const Color(0xFF1E293B)
+                        : const Color(0xFF94A3B8),
                     height: 1.3,
                   ),
                 ),
@@ -358,7 +416,7 @@ class _ProfileViewState extends State<ProfileView> {
                 ),
                 SizedBox(height: 6.h),
                 Text(
-                  'Bags Recycled',
+                  'Total Bookings',
                   style: TextStyle(
                     fontSize: 12.sp,
                     fontWeight: FontWeight.w500,
@@ -484,13 +542,13 @@ class _ProfileViewState extends State<ProfileView> {
             },
           ),
           _buildDivider(),
-          _buildMenuItem(
-            icon: Icons.emoji_events_outlined,
-            title: 'My Rewards',
-            onTap: () {
-              Navigator.pushNamed(context, MyRewardsScreen.routeName);
-            },
-          ),
+          // _buildMenuItem(
+          //   icon: Icons.emoji_events_outlined,
+          //   title: 'My Rewards',
+          //   onTap: () {
+          //     Navigator.pushNamed(context, MyRewardsScreen.routeName);
+          //   },
+          // ),
         ],
       ),
     );

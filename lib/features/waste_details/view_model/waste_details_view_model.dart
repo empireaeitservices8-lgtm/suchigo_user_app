@@ -33,6 +33,14 @@ class WasteDetailsViewModel extends ViewModel {
       _selectedCategoryId != null &&
       _categories.any((c) => c.id == _selectedCategoryId && c.isEnabled);
 
+  WasteCategoryDetailModel? get selectedCategory {
+    try {
+      return _categories.firstWhere((c) => c.id == _selectedCategoryId);
+    } catch (_) {
+      return null;
+    }
+  }
+
   void setPropertyType(WastePropertyType type) {
     if (_propertyType != type) {
       _propertyType = type;

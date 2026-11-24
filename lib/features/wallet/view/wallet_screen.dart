@@ -72,8 +72,7 @@ class _WalletScreenState extends State<WalletScreen> {
   }
 
   Future<void> _openRazorpay(RazorpayOrderModel order) async {
-    final phone =
-        await SpHelper.getString(sp_keys.keyUseMobile) ?? '+917306929058';
+    final phone = await SpHelper.getString(sp_keys.keyUseMobile) ?? '';
     final email = await SpHelper.getString(sp_keys.keyEmail) ?? '';
 
     final options = {
@@ -158,7 +157,16 @@ class _WalletScreenState extends State<WalletScreen> {
                           SizedBox(height: 14.h),
 
                           // Transactions List
-                          if (vm.transactions.isEmpty)
+                          if (vm.isLoading && vm.transactions.isEmpty)
+                            Center(
+                              child: Padding(
+                                padding: EdgeInsets.symmetric(vertical: 40.h),
+                                child: const CircularProgressIndicator(
+                                  color: Color(0xFF166534),
+                                ),
+                              ),
+                            )
+                          else if (vm.transactions.isEmpty)
                             _buildEmptyState()
                           else
                             ListView.separated(
@@ -369,6 +377,35 @@ class _WalletScreenState extends State<WalletScreen> {
   }
 
   Widget _buildTransactionItem(WalletTransactionModel item) {
+    Color iconBg;
+    Color iconColor;
+    IconData iconData;
+
+    if (item.isWelcomeIncentive || item.type == TransactionType.credit) {
+      iconBg = const Color(0xFFE8F5E9);
+      iconColor = const Color(0xFF166534);
+      iconData = item.isWelcomeIncentive
+          ? Icons.eco_rounded
+          : Icons.south_west_rounded;
+    } else if (item.type == TransactionType.pending) {
+      iconBg = const Color(0xFFFFF7ED);
+      iconColor = const Color(0xFFEA580C);
+      iconData = Icons.access_time_rounded;
+    } else {
+      iconBg = const Color(0xFFF1F5F9);
+      iconColor = const Color(0xFF475569);
+      iconData = Icons.receipt_long_rounded;
+    }
+
+    Color amountColor;
+    if (item.isWelcomeIncentive || item.type == TransactionType.credit) {
+      amountColor = const Color(0xFF166534);
+    } else if (item.type == TransactionType.pending) {
+      amountColor = const Color(0xFFEA580C);
+    } else {
+      amountColor = const Color(0xFF1E293B);
+    }
+
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
       decoration: BoxDecoration(
@@ -383,25 +420,20 @@ class _WalletScreenState extends State<WalletScreen> {
         ],
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           // Circular Icon
           Container(
             width: 44.w,
             height: 44.w,
             decoration: BoxDecoration(
-              color: item.isWelcomeIncentive
-                  ? const Color(0xFFE8F5E9)
-                  : const Color(0xFFF1F5F9),
+              color: iconBg,
               shape: BoxShape.circle,
             ),
             child: Center(
               child: Icon(
-                item.isWelcomeIncentive
-                    ? Icons.eco_rounded
-                    : Icons.swap_horiz_rounded,
-                color: item.isWelcomeIncentive
-                    ? const Color(0xFF166534)
-                    : const Color(0xFF64748B),
+                iconData,
+                color: iconColor,
                 size: 22.sp,
               ),
             ),
@@ -412,6 +444,7 @@ class _WalletScreenState extends State<WalletScreen> {
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   item.title,
@@ -420,8 +453,10 @@ class _WalletScreenState extends State<WalletScreen> {
                     fontWeight: FontWeight.w700,
                     color: const Color(0xFF1E293B),
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                SizedBox(height: 3.h),
+                SizedBox(height: 4.h),
                 Text(
                   item.dateString,
                   style: TextStyle(
@@ -433,17 +468,51 @@ class _WalletScreenState extends State<WalletScreen> {
               ],
             ),
           ),
+          SizedBox(width: 10.w),
 
-          // Amount
-          Text(
-            item.formattedAmount,
-            style: TextStyle(
-              fontSize: 15.sp,
-              fontWeight: FontWeight.w800,
-              color: item.isWelcomeIncentive
-                  ? const Color(0xFF166534)
-                  : const Color(0xFF1E293B),
-            ),
+          // Status & Amount (Status moved to top of tile)
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (item.status.isNotEmpty) ...[
+                Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 7.w,
+                    vertical: 2.h,
+                  ),
+                  decoration: BoxDecoration(
+                    color: item.type == TransactionType.credit
+                        ? const Color(0xFFE8F5E9)
+                        : (item.type == TransactionType.pending
+                            ? const Color(0xFFFFF7ED)
+                            : const Color(0xFFF1F5F9)),
+                    borderRadius: BorderRadius.circular(5.r),
+                  ),
+                  child: Text(
+                    item.status,
+                    style: TextStyle(
+                      fontSize: 10.sp,
+                      fontWeight: FontWeight.w700,
+                      color: item.type == TransactionType.credit
+                          ? const Color(0xFF166534)
+                          : (item.type == TransactionType.pending
+                              ? const Color(0xFFEA580C)
+                              : const Color(0xFF64748B)),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 4.h),
+              ],
+              Text(
+                item.formattedAmount,
+                style: TextStyle(
+                  fontSize: 15.sp,
+                  fontWeight: FontWeight.w800,
+                  color: amountColor,
+                ),
+              ),
+            ],
           ),
         ],
       ),

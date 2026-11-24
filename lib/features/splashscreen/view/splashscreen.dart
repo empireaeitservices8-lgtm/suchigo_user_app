@@ -8,6 +8,7 @@ import 'package:suchigo_user_app/features/onboarding/view/widgets/leaf_backgroun
 import 'package:suchigo_user_app/features/splashscreen/view_model/splash_view_model.dart';
 import 'package:suchigo_user_app/helpers/sp_helper.dart';
 import 'package:suchigo_user_app/providers/theme_provider.dart';
+import 'package:suchigo_user_app/services/push_notification_service.dart';
 import 'package:suchigo_user_app/services/web_api_services.dart';
 import 'package:suchigo_user_app/utils/sp_keys.dart' as sp_keys;
 
@@ -65,6 +66,7 @@ class _SplashScreenState extends State<SplashScreen>
 
       if (hasToken) {
         await WebAPIService().initTokenToHeader();
+        PushNotificationService.instance.syncDeviceToken();
         if (mounted) {
           Navigator.pushReplacementNamed(context, HomeScreen.routeName);
         }

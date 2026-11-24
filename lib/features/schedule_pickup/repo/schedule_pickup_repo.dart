@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:suchigo_user_app/helpers/logout_helper.dart';
 import 'package:suchigo_user_app/models/app_error_model.dart';
 import 'package:suchigo_user_app/services/web_api_services.dart';
 import 'package:suchigo_user_app/utils/urls.dart';
@@ -22,7 +23,7 @@ abstract class SchedulePickupRepository {
   Future<List<DisposalRateModel>> getDisposalRates(
       {Function(AppError error)? onError});
   Future<double?> getDisposalRateForLocalBody(int localBodyId,
-      {Function(AppError error)? onError});
+      {String? localBodyName, Function(AppError error)? onError});
   Future<List<CalendarDateModel>> getCalendarDates(int localBodyId,
       {Function(AppError error)? onError});
   Future<ProfileResponseModel?> getUserProfile(
@@ -325,7 +326,7 @@ class SchedulePickupRepositoryImpl implements SchedulePickupRepository {
     }
     await _apiService.initTokenToHeader();
     try {
-      final response = await _apiService.dio.get(urlDisposalRates);
+      var response = await _apiService.dio.get(urlDisposalRates);
       List rawList = [];
       if (response.data is List) {
         rawList = response.data as List;
@@ -338,14 +339,46 @@ class SchedulePickupRepositoryImpl implements SchedulePickupRepository {
         }
       }
 
+      // If empty, fallback to suchigo.pythonanywhere.com
+      if (rawList.isEmpty &&
+          !urlDisposalRates.contains('suchigo.pythonanywhere.com')) {
+        try {
+          final fallbackRes = await _apiService.dio.get(
+            'https://suchigo.pythonanywhere.com/api/disposal-rates/',
+          );
+          if (fallbackRes.data is List) {
+            rawList = fallbackRes.data as List;
+          }
+        } catch (_) {}
+      }
+
       final rates = rawList
           .whereType<Map>()
           .map((item) => DisposalRateModel.fromJson(item))
           .toList();
 
-      _cachedDisposalRates = rates;
+      if (rates.isNotEmpty) {
+        _cachedDisposalRates = rates;
+      }
       return rates;
     } on DioException catch (e) {
+      // Fallback on DioException
+      try {
+        final fallbackRes = await _apiService.dio.get(
+          'https://suchigo.pythonanywhere.com/api/disposal-rates/',
+        );
+        if (fallbackRes.data is List) {
+          final rates = (fallbackRes.data as List)
+              .whereType<Map>()
+              .map((item) => DisposalRateModel.fromJson(item))
+              .toList();
+          if (rates.isNotEmpty) {
+            _cachedDisposalRates = rates;
+            return rates;
+          }
+        }
+      } catch (_) {}
+
       if (onError != null) {
         final errorMsg = e.response?.data is Map
             ? (e.response?.data['message']?.toString() ??
@@ -366,16 +399,49 @@ class SchedulePickupRepositoryImpl implements SchedulePickupRepository {
 
   @override
   Future<double?> getDisposalRateForLocalBody(int localBodyId,
-      {Function(AppError error)? onError}) async {
+      {String? localBodyName, Function(AppError error)? onError}) async {
     final rates = await getDisposalRates(onError: onError);
+    if (rates.isEmpty) return 0.00;
+
+    // 1. Match by localBodyId
     try {
       final match = rates.firstWhere(
-        (r) => r.localBodyId == localBodyId,
+        (r) => r.localBodyId == localBodyId && r.ratePerKg > 0,
       );
       return match.ratePerKg;
-    } catch (_) {
-      return 0.00;
+    } catch (_) {}
+
+    // 2. Match by localBodyName if provided
+    String? targetName = localBodyName?.trim().toLowerCase();
+
+    // 3. If targetName not provided or default, resolve from getLocalBodiesList()
+    if (targetName == null || targetName.isEmpty || targetName == 'not selected') {
+      try {
+        final localBodies = await getLocalBodiesList();
+        final lb = localBodies.firstWhere((l) => l.id == localBodyId);
+        targetName = lb.name.trim().toLowerCase();
+      } catch (_) {}
     }
+
+    if (targetName != null && targetName.isNotEmpty && targetName != 'not selected') {
+      final cleanTarget = targetName.replaceAll(RegExp(r'[^a-z0-9]'), '');
+      try {
+        final match = rates.firstWhere((r) {
+          final cleanR = r.localBodyName
+              .trim()
+              .toLowerCase()
+              .replaceAll(RegExp(r'[^a-z0-9]'), '');
+          return cleanR.isNotEmpty &&
+              (cleanR == cleanTarget ||
+                  cleanR.contains(cleanTarget) ||
+                  cleanTarget.contains(cleanR));
+        });
+        return match.ratePerKg;
+      } catch (_) {}
+    }
+
+    // 4. Fallback: if rates is available, return the default standard rate
+    return rates.isNotEmpty ? rates.first.ratePerKg : 40.00;
   }
 
   @override
@@ -383,7 +449,7 @@ class SchedulePickupRepositoryImpl implements SchedulePickupRepository {
       {Function(AppError error)? onError}) async {
     await _apiService.initTokenToHeader();
     try {
-      final response = await _apiService.dio.get(
+      var response = await _apiService.dio.get(
         urlCalendarDates,
         queryParameters: {'local_body_id': localBodyId},
       );
@@ -397,6 +463,20 @@ class SchedulePickupRepositoryImpl implements SchedulePickupRepository {
         } else if (map['results'] is List) {
           rawList = map['results'] as List;
         }
+      }
+
+      // If empty, try fallback to suchigo.pythonanywhere.com
+      if (rawList.isEmpty &&
+          !urlCalendarDates.contains('suchigo.pythonanywhere.com')) {
+        try {
+          final fallbackRes = await _apiService.dio.get(
+            'https://suchigo.pythonanywhere.com/api/calendar-dates/',
+            queryParameters: {'local_body_id': localBodyId},
+          );
+          if (fallbackRes.data is List) {
+            rawList = fallbackRes.data as List;
+          }
+        } catch (_) {}
       }
 
       final dates = rawList
@@ -474,11 +554,24 @@ class SchedulePickupRepositoryImpl implements SchedulePickupRepository {
       return null;
     } on DioException catch (e) {
       if (onError != null) {
-        final errorMsg = e.response?.data is Map
-            ? (e.response?.data['message']?.toString() ??
-                e.response?.data['error']?.toString() ??
-                e.response?.data.toString())
-            : null;
+        final errorData = e.response?.data;
+        String? errorMsg;
+        if (errorData is Map) {
+          errorMsg = errorData['detail']?.toString() ??
+              errorData['message']?.toString() ??
+              errorData['error']?.toString() ??
+              errorData.toString();
+        } else if (errorData != null) {
+          errorMsg = errorData.toString();
+        }
+
+        if (e.response?.statusCode == 401 ||
+            (errorMsg != null &&
+                errorMsg.toLowerCase().contains('invalid token'))) {
+          errorMsg = 'Your session has expired. Please log in again.';
+          LogoutHelper.handleSessionExpired();
+        }
+
         onError(AppError(
           message: errorMsg ?? e.message ?? 'Failed to schedule pickup',
         ));

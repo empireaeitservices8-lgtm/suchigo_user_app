@@ -47,7 +47,9 @@ class NotificationRepositoryImpl implements NotificationRepository {
     return const [
       NotificationItemModel(
         id: '1',
-        title: 'SuchiGo Pickup Today',
+        orderId: 101,
+        orderNumber: 101,
+        title: 'Pickup Scheduled - Order #101',
         message:
             'Our collector will arrive today. Please ensure waste is accessible!',
         dateTime: 'Sep 21, 2026 at 08:00 AM',
@@ -56,7 +58,9 @@ class NotificationRepositoryImpl implements NotificationRepository {
       ),
       NotificationItemModel(
         id: '2',
-        title: 'SuchiGo Pickup Reminder',
+        orderId: 102,
+        orderNumber: 102,
+        title: 'Pickup Completed - Order #102',
         message:
             'Your garbage pickup is scheduled for tomorrow. Please keep your bags ready!',
         dateTime: 'Sep 20, 2026 at 04:00 PM',

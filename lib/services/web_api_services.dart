@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:suchigo_user_app/helpers/logout_helper.dart';
 import 'package:suchigo_user_app/models/app_error_model.dart';
 import 'package:suchigo_user_app/providers/_mixins.dart';
 import 'package:suchigo_user_app/utils/extensions.dart';
@@ -8,8 +9,36 @@ import 'package:flutter/foundation.dart';
 import '_mixins_api.dart';
 
 import 'api_logger_interceptor.dart';
+import 'network_service.dart';
+
+class AuthInterceptor extends Interceptor {
+  @override
+  void onError(DioException err, ErrorInterceptorHandler handler) {
+    if (err.response?.statusCode == 401) {
+      final data = err.response?.data;
+      String detail = '';
+      if (data is Map) {
+        detail = data['detail']?.toString() ??
+            data['message']?.toString() ??
+            data['error']?.toString() ??
+            '';
+      }
+      final lower = detail.toLowerCase();
+      if (lower.contains('invalid token') ||
+          lower.contains('token expired') ||
+          lower.contains('unauthenticated') ||
+          lower.contains('not provided') ||
+          detail.isEmpty) {
+        LogoutHelper.handleSessionExpired();
+      }
+    }
+    super.onError(err, handler);
+  }
+}
 
 class WebAPIService with WebAPIMixin, MixinAPIProvider {
+  static final WebAPIService _instance = WebAPIService._initialise();
+
   WebAPIService._initialise()
       : _dio = Dio(BaseOptions(
             // connectTimeout: 5000, receiveTimeout: 3000,
@@ -17,9 +46,11 @@ class WebAPIService with WebAPIMixin, MixinAPIProvider {
               "accept": "application/json",
             })) {
     dio.interceptors.add(ApiLoggerInterceptor());
+    dio.interceptors.add(AuthInterceptor());
+    dio.interceptors.add(NetworkInterceptor());
   }
 
-  factory WebAPIService() => WebAPIService._initialise();
+  factory WebAPIService() => _instance;
 
   final Dio _dio;
 

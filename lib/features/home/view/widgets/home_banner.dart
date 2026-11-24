@@ -21,10 +21,10 @@ class HomeBanner extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(22.r),
         child: AspectRatio(
-          aspectRatio: 422 / 300,
+          aspectRatio: 452 / 300,
           child: Image.asset(
             'assets/images/home_banner.png',
-            fit: BoxFit.cover,
+            fit: BoxFit.fill,
             alignment: Alignment.center,
           ),
         ),

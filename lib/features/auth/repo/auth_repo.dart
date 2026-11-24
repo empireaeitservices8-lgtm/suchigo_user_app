@@ -1,5 +1,6 @@
 import 'package:suchigo_user_app/helpers/sp_helper.dart';
 import 'package:suchigo_user_app/models/app_error_model.dart';
+import 'package:suchigo_user_app/services/push_notification_service.dart';
 import 'package:suchigo_user_app/services/web_api_services.dart';
 import 'package:suchigo_user_app/utils/sp_keys.dart' as sp_keys;
 import 'package:suchigo_user_app/utils/urls.dart';
@@ -84,6 +85,29 @@ class AuthRepositoryImpl implements AuthRepository {
     );
     if (response.token != null && response.token!.isNotEmpty) {
       await _saveVerifySession(response);
+      if (response.userId == null) {
+        try {
+          await _apiService.initTokenToHeader();
+          final profRes = await _apiService.dio.get(urlProfile);
+          if (profRes.data is Map) {
+            final data = profRes.data as Map;
+            final rootMap = data['data'] is Map
+                ? data['data'] as Map
+                : (data['profile'] is Map ? data['profile'] as Map : data);
+            final userObj = rootMap['user'];
+            final userMap = userObj is Map ? userObj as Map : null;
+            final pid = rootMap['user_id']?.toString() ??
+                rootMap['userId']?.toString() ??
+                userMap?['id']?.toString() ??
+                userMap?['user_id']?.toString() ??
+                (userObj != null && userObj is! Map ? userObj.toString() : null) ??
+                rootMap['id']?.toString();
+            if (pid != null && pid.isNotEmpty) {
+              await SpHelper.saveString(sp_keys.keyUserId, pid);
+            }
+          }
+        } catch (_) {}
+      }
     }
     return response;
   }
@@ -95,6 +119,10 @@ class AuthRepositoryImpl implements AuthRepository {
     if (model.phoneNumber != null && model.phoneNumber!.isNotEmpty) {
       await SpHelper.saveString(sp_keys.keyUseMobile, model.phoneNumber!);
     }
+    if (model.userId != null) {
+      await SpHelper.saveString(sp_keys.keyUserId, model.userId.toString());
+    }
+    PushNotificationService.instance.syncDeviceToken();
   }
 
   @override
@@ -129,6 +157,7 @@ class AuthRepositoryImpl implements AuthRepository {
     await SpHelper.saveString(sp_keys.keyEmail, profile.email);
     await SpHelper.saveString(sp_keys.keyUseMobile, profile.phoneNumber);
     await SpHelper.saveString(sp_keys.keyUserName, profile.fullName);
+    PushNotificationService.instance.syncDeviceToken();
   }
 
   Future<void> _saveLoginSession(LoginResponseModel model) async {
@@ -147,5 +176,6 @@ class AuthRepositoryImpl implements AuthRepository {
     if (model.fullName.isNotEmpty) {
       await SpHelper.saveString(sp_keys.keyUserName, model.fullName);
     }
+    PushNotificationService.instance.syncDeviceToken();
   }
 }

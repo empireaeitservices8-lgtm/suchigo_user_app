@@ -7,16 +7,26 @@ import '../track_pickup_screen.dart';
 class PickupTrackingBottomSheet extends StatefulWidget {
   final int pickupId;
 
+  final int? orderId;
+
   const PickupTrackingBottomSheet({
     super.key,
     required this.pickupId,
+    this.orderId,
   });
 
-  static Future<void> show(BuildContext context, {required int pickupId}) {
+  static Future<void> show(
+    BuildContext context, {
+    required int pickupId,
+    int? orderId,
+  }) {
     return Navigator.pushNamed(
       context,
       TrackPickupScreen.routeName,
-      arguments: pickupId,
+      arguments: TrackPickupScreenArgs(
+        pickupId: pickupId,
+        orderId: orderId,
+      ),
     );
   }
 
@@ -30,6 +40,9 @@ class _PickupTrackingBottomSheetState extends State<PickupTrackingBottomSheet> {
   bool _isLoading = true;
   String? _errorMessage;
   PickupVehicleTrackingModel? _trackingData;
+
+  int? get effectiveOrderId =>
+      _trackingData?.orderNumber ?? _trackingData?.orderId ?? widget.orderId;
 
   @override
   void initState() {
@@ -142,7 +155,9 @@ class _PickupTrackingBottomSheetState extends State<PickupTrackingBottomSheet> {
                         ),
                         SizedBox(height: 2.h),
                         Text(
-                          'Booking ID: #${widget.pickupId}',
+                          effectiveOrderId != null
+                              ? ' $effectiveOrderId'
+                              : 'Booking ID: #${widget.pickupId}',
                           style: TextStyle(
                             fontSize: 13.sp,
                             fontWeight: FontWeight.w600,
@@ -461,10 +476,15 @@ class _PickupTrackingBottomSheetState extends State<PickupTrackingBottomSheet> {
   }
 
   Widget _buildTimelineProgress(int currentStep) {
+    final status = (_trackingData?.status ?? '').toLowerCase().trim();
+    final isTravelling = status.contains('travel');
     final steps = [
       {'title': 'Booked', 'icon': Icons.check_circle_rounded},
       {'title': 'Vehicle Assigned', 'icon': Icons.assignment_turned_in_rounded},
-      {'title': 'On The Way', 'icon': Icons.directions_car_rounded},
+      {
+        'title': isTravelling ? 'Travelling' : 'In Transit',
+        'icon': Icons.local_shipping_rounded,
+      },
       {'title': 'Collected', 'icon': Icons.task_alt_rounded},
     ];
 
@@ -532,8 +552,9 @@ class _PickupTrackingBottomSheetState extends State<PickupTrackingBottomSheet> {
                 style: TextStyle(
                   fontSize: 10.5.sp,
                   fontWeight: isDone ? FontWeight.w700 : FontWeight.w500,
-                  color:
-                      isDone ? const Color(0xFF1E293B) : const Color(0xFF94A3B8),
+                  color: isDone
+                      ? const Color(0xFF1E293B)
+                      : const Color(0xFF94A3B8),
                 ),
               ),
             ],

@@ -103,7 +103,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           SizedBox(height: 20.h),
 
-                          // Stats Row (Trees Saved & Reward Points)
+                          // Waste Management Awareness & Slogan Banner
                           StatsCards(
                             treesSaved: data.treesSaved,
                             rewardPoints: data.rewardPoints,

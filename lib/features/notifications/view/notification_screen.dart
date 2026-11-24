@@ -70,6 +70,8 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                       PickupTrackingBottomSheet.show(
                                         context,
                                         pickupId: item.pickupId!,
+                                        orderId:
+                                            item.orderId ?? item.orderNumber,
                                       );
                                     }
                                   },

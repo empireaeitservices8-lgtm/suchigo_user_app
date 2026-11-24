@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:suchigo_user_app/helpers/sp_helper.dart';
 import 'package:suchigo_user_app/providers/view_model.dart';
 import 'package:suchigo_user_app/utils/sp_keys.dart' as sp_keys;
+import '../../map_location/model/map_location_model.dart';
 import '../../profile/model/profile_model.dart';
 import '../model/schedule_pickup_model.dart';
 import '../repo/schedule_pickup_repo.dart';
@@ -31,21 +33,92 @@ class SchedulePickupViewModel extends ViewModel {
 
   DateTime? _pickupDate;
   ProfileResponseModel? _userProfile;
+  double? _latitude;
+  double? _longitude;
 
-  SchedulePickupViewModel({SchedulePickupRepository? repository})
-      : _repository = repository ?? SchedulePickupRepositoryImpl() {
+  double? get latitude => _latitude;
+  double? get longitude => _longitude;
+
+  void setCoordinates(double? lat, double? lng) {
+    _latitude = lat;
+    _longitude = lng;
+    notifyListeners();
+  }
+
+  int _wasteType = 4;
+  String _wasteTypeName = 'Sanitary Waste';
+  int? _subWasteType;
+
+  int get wasteType => _wasteType;
+  String get wasteTypeName => _wasteTypeName;
+  int? get subWasteType => _subWasteType;
+
+  SchedulePickupViewModel({
+    SchedulePickupRepository? repository,
+    int? initialWasteType,
+    String? initialWasteTypeName,
+    int? initialSubWasteType,
+  })  : _repository = repository ?? SchedulePickupRepositoryImpl(),
+        _wasteType = initialWasteType ?? 4,
+        _wasteTypeName = (initialWasteTypeName != null &&
+                initialWasteTypeName.trim().isNotEmpty)
+            ? initialWasteTypeName.trim()
+            : 'Sanitary Waste',
+        _subWasteType = initialSubWasteType {
     fullNameController.addListener(_onFormUpdated);
     contactNumberController.addListener(_onFormUpdated);
     pickupAddressController.addListener(_onFormUpdated);
     zipCodeController.addListener(_onFormUpdated);
     bagsCountController.addListener(_onFormUpdated);
     loadUserProfile();
+    _initLocationCoordinates();
     _repository.getDisposalRates().then((_) {
       if (_jurisdiction.localBodyId != null &&
           _jurisdiction.ratePerKg == null) {
-        fetchAndApplyDisposalRate(_jurisdiction.localBodyId!);
+        fetchAndApplyDisposalRate(
+          _jurisdiction.localBodyId!,
+          localBodyName: _jurisdiction.localBody,
+        );
       }
     });
+  }
+
+  Future<void> _initLocationCoordinates() async {
+    try {
+      final savedLat = await SpHelper.getString('KEY_LAST_LATITUDE');
+      final savedLng = await SpHelper.getString('KEY_LAST_LONGITUDE');
+      if (savedLat != null && savedLng != null) {
+        _latitude ??= double.tryParse(savedLat);
+        _longitude ??= double.tryParse(savedLng);
+        notifyListeners();
+      }
+    } catch (_) {}
+
+    if (_latitude == null || _longitude == null) {
+      try {
+        final permission = await Geolocator.checkPermission();
+        if (permission == LocationPermission.always ||
+            permission == LocationPermission.whileInUse) {
+          final pos = await Geolocator.getLastKnownPosition();
+          if (pos != null) {
+            _latitude ??= pos.latitude;
+            _longitude ??= pos.longitude;
+            SpHelper.saveString('KEY_LAST_LATITUDE', pos.latitude.toString());
+            SpHelper.saveString('KEY_LAST_LONGITUDE', pos.longitude.toString());
+            notifyListeners();
+          }
+        }
+      } catch (_) {}
+    }
+  }
+
+  void setWasteType(int type, {String? typeName, int? subType}) {
+    _wasteType = type;
+    if (typeName != null && typeName.trim().isNotEmpty) {
+      _wasteTypeName = typeName.trim();
+    }
+    _subWasteType = subType;
+    notifyListeners();
   }
 
   void _onFormUpdated() {
@@ -69,19 +142,22 @@ class SchedulePickupViewModel extends ViewModel {
         _jurisdiction.district.trim().isNotEmpty;
     final hasLocalBody = _jurisdiction.localBody != 'Not Selected' &&
         _jurisdiction.localBody.trim().isNotEmpty;
+    final hasWard = _jurisdiction.wardNameAndNumber != 'Not Selected' &&
+        _jurisdiction.wardNameAndNumber != 'Loading Ward...' &&
+        _jurisdiction.wardNameAndNumber.trim().isNotEmpty &&
+        _jurisdiction.wardId != null;
     final hasFullName = fullNameController.text.trim().isNotEmpty;
     final hasContactNumber = contactNumberController.text.trim().isNotEmpty;
     final hasAddress = pickupAddressController.text.trim().isNotEmpty;
-    final hasZipCode = zipCodeController.text.trim().isNotEmpty;
     final hasPickupDate = _pickupDate != null;
     final hasBagsCount = bagsCountController.text.trim().isNotEmpty;
 
     return hasDistrict &&
         hasLocalBody &&
+        hasWard &&
         hasFullName &&
         hasContactNumber &&
         hasAddress &&
-        hasZipCode &&
         hasPickupDate &&
         hasBagsCount;
   }
@@ -286,13 +362,22 @@ class SchedulePickupViewModel extends ViewModel {
     _clearCalendarDates();
     notifyListeners();
     if (localBodyId != null && localBodyId > 0) {
-      fetchAndApplyDisposalRate(localBodyId);
+      fetchAndApplyDisposalRate(localBodyId, localBodyName: localBody);
       loadCalendarDates(localBodyId);
     }
   }
 
-  Future<void> fetchAndApplyDisposalRate(int localBodyId) async {
-    final rate = await _repository.getDisposalRateForLocalBody(localBodyId);
+  Future<void> fetchAndApplyDisposalRate(int localBodyId,
+      {String? localBodyName}) async {
+    final name = (localBodyName != null &&
+            localBodyName.isNotEmpty &&
+            localBodyName != 'Not Selected')
+        ? localBodyName
+        : _jurisdiction.localBody;
+    final rate = await _repository.getDisposalRateForLocalBody(
+      localBodyId,
+      localBodyName: name,
+    );
     if (rate != null && rate > 0) {
       setRatePerKg(rate);
     } else {
@@ -313,6 +398,30 @@ class SchedulePickupViewModel extends ViewModel {
 
   void setPickupDate(DateTime date) {
     _pickupDate = date;
+    notifyListeners();
+  }
+
+  void setAddressFromMap(SelectedAddressModel address) {
+    _latitude = address.latitude;
+    _longitude = address.longitude;
+    pickupAddressController.text = address.fullAddress;
+    if (address.state.isNotEmpty) {
+      stateController.text = address.state;
+    }
+    String pincode = address.zipCode.trim();
+    if (pincode.isEmpty || !RegExp(r'^\d{6}$').hasMatch(pincode)) {
+      final match = RegExp(r'\b\d{6}\b').firstMatch(address.fullAddress);
+      if (match != null) {
+        pincode = match.group(0)!;
+      }
+    }
+    if (pincode.isNotEmpty) {
+      zipCodeController.text = pincode;
+    }
+    try {
+      SpHelper.saveString('KEY_LAST_LATITUDE', address.latitude.toString());
+      SpHelper.saveString('KEY_LAST_LONGITUDE', address.longitude.toString());
+    } catch (_) {}
     notifyListeners();
   }
 
@@ -354,10 +463,7 @@ class SchedulePickupViewModel extends ViewModel {
       return 'Please enter or select State';
     }
     final zip = zipCodeController.text.trim();
-    if (zip.isEmpty) {
-      return 'Please enter Zip / Postal Code';
-    }
-    if (zip.length < 5) {
+    if (zip.isNotEmpty && zip.length < 5) {
       return 'Please enter a valid Zip / Postal Code';
     }
     if (_pickupDate == null) {
@@ -367,22 +473,47 @@ class SchedulePickupViewModel extends ViewModel {
   }
 
   Future<bool> submit({Function(String error)? onError}) async {
-    if (_jurisdiction.district == 'Not Selected') {
-      onError?.call('Please select a district');
-      return false;
-    }
-    if (_jurisdiction.localBody == 'Not Selected') {
-      onError?.call('Please select a local body');
-      return false;
-    }
-    if (contactNumberController.text.trim().isEmpty) {
-      onError?.call('Please enter your contact number');
+    final validationError = validateForm();
+    if (validationError != null) {
+      onError?.call(validationError);
       return false;
     }
 
     isLoading = true;
     notifyListeners();
     try {
+      // Ensure latitude and longitude are captured if possible
+      if (_latitude == null || _longitude == null) {
+        try {
+          final permission = await Geolocator.checkPermission();
+          if (permission == LocationPermission.always ||
+              permission == LocationPermission.whileInUse) {
+            final pos = await Geolocator.getLastKnownPosition();
+            if (pos != null) {
+              _latitude ??= pos.latitude;
+              _longitude ??= pos.longitude;
+            } else {
+              final currentPos = await Geolocator.getCurrentPosition(
+                timeLimit: const Duration(seconds: 4),
+              );
+              _latitude ??= currentPos.latitude;
+              _longitude ??= currentPos.longitude;
+            }
+          }
+        } catch (_) {}
+      }
+
+      if (_latitude == null || _longitude == null) {
+        try {
+          final savedLat = await SpHelper.getString('KEY_LAST_LATITUDE');
+          final savedLng = await SpHelper.getString('KEY_LAST_LONGITUDE');
+          if (savedLat != null && savedLng != null) {
+            _latitude ??= double.tryParse(savedLat);
+            _longitude ??= double.tryParse(savedLng);
+          }
+        } catch (_) {}
+      }
+
       // Auto-fallback pickup date if not chosen
       if (_pickupDate == null && upcomingPickupDates.isNotEmpty) {
         _pickupDate = upcomingPickupDates.first;
@@ -404,6 +535,10 @@ class SchedulePickupViewModel extends ViewModel {
         numberOfBags: int.tryParse(bagsCountController.text) ?? 1,
         secondaryNumber: secondaryNumberController.text.trim(),
         landmark: landmarkController.text.trim(),
+        wasteType: _wasteType,
+        subWasteType: _subWasteType,
+        latitude: _latitude,
+        longitude: _longitude,
       );
       _createdPickup = await _repository.submitPickupSchedule(
         request,

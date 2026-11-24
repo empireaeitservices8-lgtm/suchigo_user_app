@@ -4,14 +4,26 @@ import 'package:url_launcher/url_launcher.dart';
 import '../model/pickup_vehicle_tracking_model.dart';
 import '../repo/order_repo.dart';
 
+class TrackPickupScreenArgs {
+  final int pickupId;
+  final int? orderId;
+
+  const TrackPickupScreenArgs({
+    required this.pickupId,
+    this.orderId,
+  });
+}
+
 class TrackPickupScreen extends StatefulWidget {
   static const routeName = '/TrackPickupScreen';
 
   final int pickupId;
+  final int? orderId;
 
   const TrackPickupScreen({
     super.key,
     required this.pickupId,
+    this.orderId,
   });
 
   @override
@@ -23,6 +35,14 @@ class _TrackPickupScreenState extends State<TrackPickupScreen> {
   bool _isLoading = true;
   String? _errorMessage;
   PickupVehicleTrackingModel? _trackingData;
+
+  int get effectivePickupId =>
+      (_trackingData?.pickupId != null && _trackingData!.pickupId > 0)
+          ? _trackingData!.pickupId
+          : widget.pickupId;
+
+  int? get effectiveOrderId =>
+      _trackingData?.orderNumber ?? _trackingData?.orderId ?? widget.orderId;
 
   @override
   void initState() {
@@ -99,13 +119,23 @@ class _TrackPickupScreenState extends State<TrackPickupScreen> {
           ),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text(
-          'Track Pickup #WC-${widget.pickupId}',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 18.sp,
-            fontWeight: FontWeight.w700,
-          ),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              effectiveOrderId != null
+                  ? 'Track Pickup $effectiveOrderId'
+                  : (effectivePickupId > 0
+                      ? 'Track Pickup #$effectivePickupId'
+                      : 'Track Pickup'),
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 17.sp,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
         ),
         actions: [
           IconButton(
@@ -139,10 +169,11 @@ class _TrackPickupScreenState extends State<TrackPickupScreen> {
                       children: [
                         // Card 1: Collection Status Stepper
                         _buildCollectionStatusCard(),
-                        SizedBox(height: 14.h),
-
-                        // Card 2: Waste Collector Card
-                        _buildWasteCollectorCard(),
+                        if (_trackingData?.hasCollector == true) ...[
+                          SizedBox(height: 14.h),
+                          // Card 2: Waste Collector Card
+                          _buildWasteCollectorCard(),
+                        ],
                         SizedBox(height: 14.h),
 
                         // Card 3: Vehicle & Pickup Details Card
@@ -156,16 +187,39 @@ class _TrackPickupScreenState extends State<TrackPickupScreen> {
   }
 
   Widget _buildCollectionStatusCard() {
-    final status = (_trackingData?.status ?? 'pending').toLowerCase();
-    int currentStep = 0;
-    if (status.contains('complete') || status.contains('collected')) {
-      currentStep = 2;
-    } else if (status.contains('transit') ||
-        status.contains('on_the_way') ||
-        status.contains('dispatched')) {
-      currentStep = 1;
+    final status = (_trackingData?.status ?? 'pending').toLowerCase().trim();
+    final bool isCompleted = status.contains('complete') ||
+        status.contains('collected') ||
+        status.contains('done');
+    final bool isTravelling = !isCompleted && status.contains('travel');
+    final bool isInTransit = !isCompleted &&
+        (isTravelling ||
+            status.contains('transit') ||
+            status.contains('on_the_way') ||
+            status.contains('on the way') ||
+            status.contains('dispatched') ||
+            status == 'moving');
+
+    final bool hasVehicle = (_trackingData?.vehicleName != null &&
+        _trackingData!.vehicleName!.trim().isNotEmpty);
+    final bool hasCollector = _trackingData?.hasCollector == true;
+    final bool isAssigned = isCompleted ||
+        isInTransit ||
+        status.contains('assign') ||
+        hasVehicle ||
+        hasCollector;
+
+    final String statusBadgeText;
+    if (isCompleted) {
+      statusBadgeText = 'COLLECTED';
+    } else if (isTravelling) {
+      statusBadgeText = 'TRAVELLING';
+    } else if (isInTransit) {
+      statusBadgeText = 'IN TRANSIT';
+    } else if (isAssigned) {
+      statusBadgeText = 'ASSIGNED';
     } else {
-      currentStep = 0; // Assigned
+      statusBadgeText = 'IN PROGRESS';
     }
 
     return Container(
@@ -185,15 +239,21 @@ class _TrackPickupScreenState extends State<TrackPickupScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Collection Status',
-            style: TextStyle(
-              fontSize: 16.sp,
-              fontWeight: FontWeight.w800,
-              color: const Color(0xFF1E293B),
-            ),
+          // Header with Title & Live Status Badge
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Collection Status',
+                style: TextStyle(
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFF1E293B),
+                ),
+              ),
+            ],
           ),
-          SizedBox(height: 20.h),
+          SizedBox(height: 22.h),
 
           // 3-Step Stepper
           Row(
@@ -201,32 +261,37 @@ class _TrackPickupScreenState extends State<TrackPickupScreen> {
             children: [
               // Step 1: Assigned
               _buildStepItem(
-                isActive: currentStep >= 0,
-                isCompleted: currentStep >= 0,
+                isActive: !isAssigned && !isCompleted && !isInTransit,
+                isCompleted: isAssigned,
                 title: 'Assigned',
-                subtitle: 'Driver allocated',
+                subtitle: isAssigned ? 'Driver allocated' : 'In progress',
+                icon: Icons.assignment_turned_in_rounded,
               ),
 
               // Connector 1
-              _buildConnector(isDone: currentStep >= 1),
+              _buildConnector(isDone: isInTransit || isCompleted),
 
-              // Step 2: In Transit
+              // Step 2: Travelling / In Transit
               _buildStepItem(
-                isActive: currentStep >= 1,
-                isCompleted: currentStep >= 1,
-                title: 'In Transit',
-                subtitle: 'Truck on the way',
+                isActive: isInTransit,
+                isCompleted: isCompleted,
+                title: isTravelling ? 'Travelling' : 'In Transit',
+                subtitle: isInTransit
+                    ? (isTravelling ? 'Vehicle travelling' : 'Truck on the way')
+                    : (isCompleted ? 'Completed' : 'Pending dispatch'),
+                icon: Icons.local_shipping_rounded,
               ),
 
               // Connector 2
-              _buildConnector(isDone: currentStep >= 2),
+              _buildConnector(isDone: isCompleted),
 
               // Step 3: Completed
               _buildStepItem(
-                isActive: currentStep >= 2,
-                isCompleted: currentStep >= 2,
+                isActive: isCompleted,
+                isCompleted: isCompleted,
                 title: 'Completed',
                 subtitle: 'Waste collected',
+                icon: Icons.check_circle_rounded,
               ),
             ],
           ),
@@ -240,36 +305,65 @@ class _TrackPickupScreenState extends State<TrackPickupScreen> {
     required bool isCompleted,
     required String title,
     required String subtitle,
+    required IconData icon,
   }) {
+    Color circleBg;
+    Color iconColor;
+    Widget iconWidget;
+
+    if (isCompleted) {
+      circleBg = const Color(0xFF166534);
+      iconColor = Colors.white;
+      iconWidget = Icon(
+        Icons.check_rounded,
+        color: iconColor,
+        size: 16.sp,
+      );
+    } else if (isActive) {
+      circleBg = const Color(0xFF166534);
+      iconColor = Colors.white;
+      iconWidget = Icon(
+        icon,
+        color: iconColor,
+        size: 16.sp,
+      );
+    } else {
+      circleBg = const Color(0xFFF1F5F9);
+      iconColor = const Color(0xFF94A3B8);
+      iconWidget = Container(
+        width: 8.w,
+        height: 8.w,
+        decoration: const BoxDecoration(
+          color: Color(0xFF94A3B8),
+          shape: BoxShape.circle,
+        ),
+      );
+    }
+
     return Expanded(
       flex: 3,
       child: Column(
         children: [
           Container(
-            width: 26.w,
-            height: 26.w,
+            width: 32.w,
+            height: 32.w,
             decoration: BoxDecoration(
-              color: isCompleted
-                  ? const Color(0xFF166534)
-                  : const Color(0xFFE2E8F0),
+              color: circleBg,
               shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: isCompleted
-                  ? Icon(
-                      Icons.check_rounded,
-                      color: Colors.white,
-                      size: 16.sp,
-                    )
-                  : Container(
-                      width: 8.w,
-                      height: 8.w,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF94A3B8),
-                        shape: BoxShape.circle,
+              border: isActive && !isCompleted
+                  ? Border.all(color: const Color(0xFF86EFAC), width: 3.5)
+                  : null,
+              boxShadow: isActive && !isCompleted
+                  ? [
+                      BoxShadow(
+                        color: const Color(0xFF166534).withValues(alpha: 0.25),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
                       ),
-                    ),
+                    ]
+                  : null,
             ),
+            child: Center(child: iconWidget),
           ),
           SizedBox(height: 8.h),
           Text(
@@ -278,7 +372,7 @@ class _TrackPickupScreenState extends State<TrackPickupScreen> {
             style: TextStyle(
               fontSize: 13.5.sp,
               fontWeight: FontWeight.w700,
-              color: isCompleted
+              color: (isCompleted || isActive)
                   ? const Color(0xFF166534)
                   : const Color(0xFF64748B),
             ),
@@ -289,7 +383,9 @@ class _TrackPickupScreenState extends State<TrackPickupScreen> {
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 10.5.sp,
-              color: const Color(0xFF94A3B8),
+              fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+              color:
+                  isActive ? const Color(0xFF15803D) : const Color(0xFF94A3B8),
               height: 1.2,
             ),
           ),
@@ -302,10 +398,13 @@ class _TrackPickupScreenState extends State<TrackPickupScreen> {
     return Expanded(
       flex: 2,
       child: Padding(
-        padding: EdgeInsets.only(top: 12.w),
+        padding: EdgeInsets.only(top: 15.w),
         child: Container(
-          height: 2,
-          color: isDone ? const Color(0xFF166534) : const Color(0xFFCBD5E1),
+          height: 2.5,
+          decoration: BoxDecoration(
+            color: isDone ? const Color(0xFF166534) : const Color(0xFFCBD5E1),
+            borderRadius: BorderRadius.circular(2.r),
+          ),
         ),
       ),
     );
@@ -313,14 +412,13 @@ class _TrackPickupScreenState extends State<TrackPickupScreen> {
 
   Widget _buildWasteCollectorCard() {
     final data = _trackingData;
-    final fullName = (data?.fullName ?? '').trim();
-    final displayName = fullName.isNotEmpty ? fullName : 'raina';
-    final contactNumber =
-        (data?.contactNumber ?? '').trim().isNotEmpty
-            ? data!.contactNumber
-            : '+917306929058';
-    final initialLetter =
-        displayName.isNotEmpty ? displayName[0].toUpperCase() : 'R';
+    final collectorName = (data?.collectorName ?? '').trim();
+    if (collectorName.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    final displayName = collectorName;
+    final collectorPhone = (data?.collectorPhone ?? '').trim();
+    final initialLetter = displayName[0].toUpperCase();
 
     return Container(
       width: double.infinity,
@@ -381,39 +479,42 @@ class _TrackPickupScreenState extends State<TrackPickupScreen> {
                     color: const Color(0xFF1E293B),
                   ),
                 ),
-                SizedBox(height: 2.h),
-                Text(
-                  contactNumber,
-                  style: TextStyle(
-                    fontSize: 13.5.sp,
-                    fontWeight: FontWeight.w500,
-                    color: const Color(0xFF64748B),
+                if (collectorPhone.isNotEmpty) ...[
+                  SizedBox(height: 2.h),
+                  Text(
+                    collectorPhone,
+                    style: TextStyle(
+                      fontSize: 13.5.sp,
+                      fontWeight: FontWeight.w500,
+                      color: const Color(0xFF64748B),
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
           ),
 
           // Green Call Icon Button
-          InkWell(
-            onTap: () => _makePhoneCall(contactNumber),
-            borderRadius: BorderRadius.circular(24.r),
-            child: Container(
-              width: 44.w,
-              height: 44.w,
-              decoration: const BoxDecoration(
-                color: Color(0xFFE8F5E9),
-                shape: BoxShape.circle,
-              ),
-              child: const Center(
-                child: Icon(
-                  Icons.phone_rounded,
-                  color: Color(0xFF1D723B),
-                  size: 22,
+          if (collectorPhone.isNotEmpty)
+            InkWell(
+              onTap: () => _makePhoneCall(collectorPhone),
+              borderRadius: BorderRadius.circular(24.r),
+              child: Container(
+                width: 44.w,
+                height: 44.w,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFE8F5E9),
+                  shape: BoxShape.circle,
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.phone_rounded,
+                    color: Color(0xFF1D723B),
+                    size: 22,
+                  ),
                 ),
               ),
             ),
-          ),
         ],
       ),
     );
@@ -421,24 +522,38 @@ class _TrackPickupScreenState extends State<TrackPickupScreen> {
 
   Widget _buildVehicleAndDetailsCard() {
     final data = _trackingData;
-    final vehicleName =
-        (data?.vehicleName != null && data!.vehicleName!.trim().isNotEmpty)
-            ? data.vehicleName!
-            : 'Collection Truck';
-    final vehicleNumber = (data?.vehicleNumber != null &&
-            data!.vehicleNumber!.trim().isNotEmpty)
-        ? data.vehicleNumber!
-        : 'KL-01-1234';
-    final pickupDate = (data?.pickupDate ?? '').trim().isNotEmpty
-        ? data!.pickupDate
-        : '2026-10-09';
+    final status = (data?.status ?? '').toLowerCase().trim();
+    final bool isTravelling = status.contains('travel');
+
+    final rawVehicleName = data?.vehicleName?.trim() ?? '';
+    final hasVehicle = rawVehicleName.isNotEmpty &&
+        rawVehicleName.toLowerCase() != 'null' &&
+        rawVehicleName.toLowerCase() != 'none' &&
+        rawVehicleName.toLowerCase() != 'pending';
+    final vehicleName = hasVehicle
+        ? rawVehicleName
+        : (isTravelling
+            ? 'Vehicle Travelling'
+            : 'Vehicle Allocation in Progress');
+
+    final rawVehicleNumber = data?.vehicleNumber?.trim() ?? '';
+    final hasVehicleNumber = rawVehicleNumber.isNotEmpty &&
+        rawVehicleNumber.toLowerCase() != 'null' &&
+        rawVehicleNumber.toLowerCase() != 'none' &&
+        rawVehicleNumber.toLowerCase() != 'pending';
+    final vehicleNumber = hasVehicleNumber ? rawVehicleNumber : 'Pending';
+    final pickupDate = data?.formattedDate.isNotEmpty == true
+        ? data!.formattedDate
+        : ((data?.pickupDate ?? '').trim().isNotEmpty
+            ? data!.pickupDate
+            : 'Scheduled');
     final address = (data?.address ?? '').trim().isNotEmpty
         ? data!.address
-        : '9F, Infopark Phase 2, Kochi, Kakkanad, Keralam 682303, India, Ernakulam, Ernakulam, Kerala';
+        : 'Address not available';
 
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(18.w),
+      padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 18.h),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20.r),
@@ -458,50 +573,125 @@ class _TrackPickupScreenState extends State<TrackPickupScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Vehicle Allocated',
-                    style: TextStyle(
-                      fontSize: 12.sp,
-                      fontWeight: FontWeight.w500,
-                      color: const Color(0xFF94A3B8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      hasVehicle
+                          ? 'Vehicle Allocated'
+                          : (isTravelling
+                              ? 'Vehicle Status'
+                              : 'Vehicle Allocation'),
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.w500,
+                        color: const Color(0xFF94A3B8),
+                      ),
+                    ),
+                    SizedBox(height: 3.h),
+                    Text(
+                      vehicleName,
+                      style: TextStyle(
+                        fontSize: 15.sp,
+                        fontWeight: FontWeight.w800,
+                        color: hasVehicle
+                            ? const Color(0xFF1E293B)
+                            : (isTravelling
+                                ? const Color(0xFF166534)
+                                : const Color(0xFFD97706)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(width: 8.w),
+              if (hasVehicleNumber)
+                Container(
+                  padding:
+                      EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFFBEB),
+                    borderRadius: BorderRadius.circular(8.r),
+                    border: Border.all(
+                      color: const Color(0xFFF59E0B),
+                      width: 1.5,
                     ),
                   ),
-                  SizedBox(height: 3.h),
-                  Text(
-                    vehicleName,
+                  child: Text(
+                    vehicleNumber,
                     style: TextStyle(
-                      fontSize: 15.5.sp,
+                      fontSize: 12.5.sp,
                       fontWeight: FontWeight.w800,
-                      color: const Color(0xFF1E293B),
+                      color: const Color(0xFFD97706),
+                      letterSpacing: 0.8,
                     ),
                   ),
-                ],
-              ),
-
-              // Yellow Number Plate Badge
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFFBEB),
-                  borderRadius: BorderRadius.circular(8.r),
-                  border: Border.all(
-                    color: const Color(0xFFF59E0B),
-                    width: 1.5,
+                )
+              else if (isTravelling)
+                Container(
+                  padding:
+                      EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFDCFCE7),
+                    borderRadius: BorderRadius.circular(8.r),
+                    border: Border.all(
+                      color: const Color(0xFF86EFAC),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.local_shipping_rounded,
+                        size: 13,
+                        color: Color(0xFF166534),
+                      ),
+                      SizedBox(width: 4.w),
+                      Text(
+                        'Travelling',
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF166534),
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                Container(
+                  padding:
+                      EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFFBEB),
+                    borderRadius: BorderRadius.circular(8.r),
+                    border: Border.all(
+                      color: const Color(0xFFF59E0B),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.access_time_rounded,
+                        size: 13,
+                        color: Color(0xFFD97706),
+                      ),
+                      SizedBox(width: 4.w),
+                      Text(
+                        'In Progress',
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFFD97706),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                child: Text(
-                  vehicleNumber,
-                  style: TextStyle(
-                    fontSize: 12.5.sp,
-                    fontWeight: FontWeight.w800,
-                    color: const Color(0xFFD97706),
-                    letterSpacing: 0.8,
-                  ),
-                ),
-              ),
             ],
           ),
 
@@ -547,6 +737,11 @@ class _TrackPickupScreenState extends State<TrackPickupScreen> {
             ],
           ),
 
+          SizedBox(height: 14.h),
+          const Divider(
+            height: 1,
+            color: Color(0xFFE2E8F0),
+          ),
           SizedBox(height: 14.h),
 
           // Collection Address Row

@@ -47,8 +47,19 @@ class ProfileResponseModel {
             ? UserAccountModel.fromJson(rootMap)
             : null);
 
+    final userObj = rootMap['user'];
+    final int? userIntId = userObj is num
+        ? userObj.toInt()
+        : (userObj is String ? int.tryParse(userObj) : null);
+
+    final resolvedId = int.tryParse(rootMap['user_id']?.toString() ?? '') ??
+        int.tryParse(rootMap['userId']?.toString() ?? '') ??
+        userIntId ??
+        parsedUser?.id ??
+        int.tryParse(rootMap['id']?.toString() ?? '');
+
     return ProfileResponseModel(
-      id: int.tryParse(rootMap['id']?.toString() ?? ''),
+      id: resolvedId,
       phoneNumber: phone,
       address: rootMap['address']?.toString(),
       profilePicture: rootMap['profile_picture']?.toString(),
@@ -61,6 +72,8 @@ class ProfileResponseModel {
       user: parsedUser,
     );
   }
+
+  int? get resolvedUserId => user?.id ?? id;
 
   String get fullName {
     final name = user?.fullName;
@@ -120,6 +133,7 @@ class EditProfileRequestModel {
   final String? gender;
   final String? email;
   final String? address;
+  final String? fcmToken;
 
   const EditProfileRequestModel({
     this.firstName,
@@ -127,6 +141,7 @@ class EditProfileRequestModel {
     this.gender,
     this.email,
     this.address,
+    this.fcmToken,
   });
 
   Map<String, dynamic> toJson() => {
@@ -136,5 +151,7 @@ class EditProfileRequestModel {
           'gender': gender!.trim().toLowerCase(),
         if (email != null) 'email': email!.trim(),
         if (address != null) 'address': address!.trim(),
+        if (fcmToken != null && fcmToken!.trim().isNotEmpty)
+          'fcm_token': fcmToken!.trim(),
       };
 }

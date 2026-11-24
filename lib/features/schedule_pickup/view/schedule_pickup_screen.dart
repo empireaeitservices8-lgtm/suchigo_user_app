@@ -20,7 +20,16 @@ import 'package:suchigo_user_app/widgets/app_button_widget.dart';
 class SchedulePickupScreen extends StatefulWidget {
   static const routeName = '/SchedulePickupScreen';
 
-  const SchedulePickupScreen({super.key});
+  final int? initialWasteType;
+  final String? initialWasteTypeName;
+  final int? initialSubWasteType;
+
+  const SchedulePickupScreen({
+    super.key,
+    this.initialWasteType,
+    this.initialWasteTypeName,
+    this.initialSubWasteType,
+  });
 
   @override
   State<SchedulePickupScreen> createState() => _SchedulePickupScreenState();
@@ -33,7 +42,31 @@ class _SchedulePickupScreenState extends State<SchedulePickupScreen> {
   @override
   void initState() {
     super.initState();
-    _viewModel = SchedulePickupViewModel(repository: _repository);
+    _viewModel = SchedulePickupViewModel(
+      repository: _repository,
+      initialWasteType: widget.initialWasteType ?? 4,
+      initialWasteTypeName: widget.initialWasteTypeName ?? 'Sanitary Waste',
+      initialSubWasteType: widget.initialSubWasteType,
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final args = ModalRoute.of(context)?.settings.arguments;
+    if (args is Map) {
+      final wt = int.tryParse(args['wasteType']?.toString() ?? '') ??
+          int.tryParse(args['waste_type']?.toString() ?? '');
+      final wtn = args['wasteTypeName']?.toString() ??
+          args['waste_type_name']?.toString();
+      final swt = int.tryParse(args['subWasteType']?.toString() ?? '') ??
+          int.tryParse(args['sub_waste_type']?.toString() ?? '');
+      if (wt != null) {
+        _viewModel.setWasteType(wt, typeName: wtn, subType: swt);
+      }
+    } else if (args is int) {
+      _viewModel.setWasteType(args);
+    }
   }
 
   bool _isFetchingSheetData = false;
@@ -273,6 +306,8 @@ class _SchedulePickupScreenState extends State<SchedulePickupScreen> {
                           addressController: vm.pickupAddressController,
                           stateController: vm.stateController,
                           zipCodeController: vm.zipCodeController,
+                          latitude: vm.latitude,
+                          longitude: vm.longitude,
                           onSelectOnMap: () async {
                             final result = await Navigator.pushNamed(
                               context,
@@ -280,12 +315,7 @@ class _SchedulePickupScreenState extends State<SchedulePickupScreen> {
                             );
                             if (result != null &&
                                 result is SelectedAddressModel) {
-                              vm.pickupAddressController.text =
-                                  result.fullAddress;
-                              if (result.state.isNotEmpty) {
-                                vm.stateController.text = result.state;
-                              }
-                              vm.zipCodeController.text = result.zipCode;
+                              vm.setAddressFromMap(result);
                             }
                           },
                         ),
@@ -308,64 +338,86 @@ class _SchedulePickupScreenState extends State<SchedulePickupScreen> {
                         SizedBox(height: 24.h),
 
                         // Submit Button (disabled until all required fields are completed)
-                        AppButton.gradient(
-                          text: 'SUBMIT',
-                          height: 54.h,
-                          borderRadius: 28.r,
-                          isEnabled: vm.isFormComplete,
-                          isLoading: vm.isLoading,
-                          disabledBackgroundColor: const Color(0xFFD1D5DB),
-                          disabledTextColor: const Color(0xFF6B7280),
-                          gradient: const LinearGradient(
-                            colors: [
-                              Color(0xFF26A69A),
-                              Color(0xFF00C853),
-                              Color(0xFF00B0FF),
-                            ],
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFF00C853)
-                                  .withValues(alpha: 0.3),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
+                        GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: !vm.isFormComplete
+                              ? () {
+                                  final err = vm.validateForm();
+                                  if (err != null) {
+                                    CustomToast.show(
+                                      context,
+                                      message: err,
+                                    );
+                                  }
+                                }
+                              : null,
+                          child: AppButton.gradient(
+                            text: 'SUBMIT',
+                            height: 54.h,
+                            borderRadius: 28.r,
+                            isEnabled: vm.isFormComplete,
+                            isLoading: vm.isLoading,
+                            disabledBackgroundColor: const Color(0xFFD1D5DB),
+                            disabledTextColor: const Color(0xFF6B7280),
+                            gradient: const LinearGradient(
+                              colors: [
+                                Color(0xFF26A69A),
+                                Color(0xFF00C853),
+                                Color(0xFF00B0FF),
+                              ],
                             ),
-                          ],
-                          textStyle: TextStyle(
-                            fontSize: 16.sp,
-                            fontWeight: FontWeight.w800,
-                            color: vm.isFormComplete
-                                ? Colors.white
-                                : const Color(0xFF6B7280),
-                            letterSpacing: 1.0,
-                          ),
-                          onTap: () async {
-                            final success = await vm.submit(
-                              onError: (error) {
-                                CustomToast.show(
-                                  context,
-                                  message: error,
-                                );
-                              },
-                            );
-                            if (success && context.mounted) {
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF00C853)
+                                    .withValues(alpha: 0.3),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                            textStyle: TextStyle(
+                              fontSize: 16.sp,
+                              fontWeight: FontWeight.w800,
+                              color: vm.isFormComplete
+                                  ? Colors.white
+                                  : const Color(0xFF6B7280),
+                              letterSpacing: 1.0,
+                            ),
+                            onTap: () async {
+                              final success = await vm.submit(
+                                onError: (error) {
+                                  CustomToast.show(
+                                    context,
+                                    message: error,
+                                  );
+                                },
+                              );
+                              if (success && context.mounted) {
                               final pickup = vm.createdPickup;
+                              final orderIdVal =
+                                  pickup?.orderId ?? pickup?.orderNumber;
+                              final orderIdStr = orderIdVal?.toString();
                               final booking = BookingConfirmedModel(
-                                bookingId: pickup != null
-                                    ? 'WC-${pickup.id}'
-                                    : 'WC-115',
+                                bookingId: orderIdStr != null &&
+                                        orderIdStr.isNotEmpty
+                                    ? orderIdStr.replaceAll('#', '').trim()
+                                    : (pickup != null ? '${pickup.id}' : ''),
+                                orderId: orderIdStr?.replaceAll('#', '').trim(),
+                                pickupId: pickup?.id,
                                 status: pickup?.status.isNotEmpty == true
                                     ? (pickup!.status[0].toUpperCase() +
                                         pickup.status.substring(1))
                                     : 'Confirmed',
                                 wasteType:
-                                    pickup?.wasteTypeName.isNotEmpty == true
-                                        ? pickup!.wasteTypeName
-                                        : (vm.bagsCountController.text
-                                                .trim()
-                                                .isNotEmpty
-                                            ? vm.bagsCountController.text.trim()
-                                            : '1'),
+                                    pickup?.wasteTypeName.isNotEmpty == true &&
+                                            pickup!.wasteTypeName !=
+                                                'Organic Waste'
+                                        ? pickup.wasteTypeName
+                                        : (vm.wasteTypeName.isNotEmpty
+                                            ? vm.wasteTypeName
+                                            : (pickup?.wasteTypeName.isNotEmpty ==
+                                                    true
+                                                ? pickup!.wasteTypeName
+                                                : 'Sanitary Waste')),
                                 collectionDate: vm.pickupDate != null
                                     ? DateFormat('EEEE, d MMM yyyy')
                                         .format(vm.pickupDate!)
@@ -385,18 +437,51 @@ class _SchedulePickupScreenState extends State<SchedulePickupScreen> {
                                     pickup?.contactNumber.isNotEmpty == true
                                         ? pickup!.contactNumber
                                         : (vm.contactNumberController.text
-                                            .trim()
-                                            .isNotEmpty
-                                        ? vm.contactNumberController.text
-                                            .trim()
-                                        : ''),
-                                pickupAddress: pickup != null
-                                    ? '${pickup.street},\n${pickup.district} – ${pickup.zipCode}'
-                                    : (vm.pickupAddressController.text
-                                            .trim()
-                                            .isNotEmpty
-                                        ? '${vm.pickupAddressController.text.trim()}, ${vm.jurisdiction.district != "Not Selected" ? vm.jurisdiction.district : ""} - ${vm.zipCodeController.text.trim().isNotEmpty ? vm.zipCodeController.text.trim() : ""}'
-                                        : ''),
+                                                .trim()
+                                                .isNotEmpty
+                                            ? vm.contactNumberController.text
+                                                .trim()
+                                            : ''),
+                                pickupAddress: () {
+                                  if (pickup != null &&
+                                      pickup.street.isNotEmpty) {
+                                    if (pickup.street.contains('India') ||
+                                        (pickup.zipCode.isNotEmpty &&
+                                            pickup.street
+                                                .contains(pickup.zipCode))) {
+                                      return pickup.street;
+                                    }
+                                    final dist = pickup.district.isNotEmpty
+                                        ? pickup.district
+                                        : '';
+                                    final zip = pickup.zipCode.isNotEmpty
+                                        ? pickup.zipCode
+                                        : '';
+                                    if (dist.isNotEmpty && zip.isNotEmpty) {
+                                      return '${pickup.street},\n$dist – $zip';
+                                    }
+                                    return pickup.street;
+                                  }
+                                  final addr =
+                                      vm.pickupAddressController.text.trim();
+                                  final zip = vm.zipCodeController.text.trim();
+                                  final dist =
+                                      vm.jurisdiction.district != "Not Selected"
+                                          ? vm.jurisdiction.district
+                                          : "";
+                                  if (addr.isNotEmpty) {
+                                    if (addr.contains('India') ||
+                                        (zip.isNotEmpty &&
+                                            addr.contains(zip))) {
+                                      return addr;
+                                    }
+                                    if (dist.isNotEmpty && zip.isNotEmpty) {
+                                      return '$addr,\n$dist – $zip';
+                                    }
+                                    return addr;
+                                  }
+                                  return '';
+                                }(),
                                 co2Saved: '0.0 kg',
                                 recycledPercent: '0%',
                                 treesEquiv: '0.0',
@@ -413,7 +498,8 @@ class _SchedulePickupScreenState extends State<SchedulePickupScreen> {
                             }
                           },
                         ),
-                        SizedBox(height: 28.h),
+                      ),
+                      SizedBox(height: 28.h),
                       ],
                     ),
                   ),
@@ -519,6 +605,7 @@ class _SchedulePickupScreenState extends State<SchedulePickupScreen> {
               // 1. Jurisdiction & Waste Rate Card nested inside curved gradient
               JurisdictionCard(
                 jurisdiction: vm.jurisdiction,
+                wasteTypeName: vm.wasteTypeName,
                 onSelectDistrict: () {
                   _fetchAndOpenSheet(
                     title: 'Select District',
@@ -596,9 +683,7 @@ class _SchedulePickupScreenState extends State<SchedulePickupScreen> {
                           .map((w) => JurisdictionOption(
                                 id: w.id,
                                 title: w.displayName,
-                                subtitle: w.wardNumber > 0
-                                    ? 'Ward #${w.wardNumber}'
-                                    : null,
+                                subtitle: "",
                                 data: w,
                               ))
                           .toList();
@@ -616,7 +701,9 @@ class _SchedulePickupScreenState extends State<SchedulePickupScreen> {
                       );
                       if (vm.jurisdiction.localBodyId != null) {
                         vm.fetchAndApplyDisposalRate(
-                            vm.jurisdiction.localBodyId!);
+                          vm.jurisdiction.localBodyId!,
+                          localBodyName: vm.jurisdiction.localBody,
+                        );
                       }
                     },
                   );

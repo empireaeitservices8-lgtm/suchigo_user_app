@@ -107,7 +107,7 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
             SizedBox(height: 16.h),
 
             // Bottom Security Tips Card
-            _buildSecurityTipsCard(),
+            // _buildSecurityTipsCard(),
 
             SizedBox(height: 24.h),
           ],

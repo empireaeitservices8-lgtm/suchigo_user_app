@@ -219,9 +219,17 @@ class _WasteDetailsScreenState extends State<WasteDetailsScreen> {
                     child: InkWell(
                       onTap: vm.canContinue
                           ? () {
+                              final selected = vm.selectedCategory;
+                              final wasteTypeId = selected?.wasteTypeId ?? 4;
+                              final wasteTypeName =
+                                  selected?.formattedTitle ?? 'Sanitary Waste';
                               Navigator.pushNamed(
                                 context,
                                 '/SchedulePickupScreen',
+                                arguments: {
+                                  'wasteType': wasteTypeId,
+                                  'wasteTypeName': wasteTypeName,
+                                },
                               );
                             }
                           : null,

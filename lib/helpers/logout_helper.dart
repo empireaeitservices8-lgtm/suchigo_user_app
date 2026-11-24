@@ -1,11 +1,45 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:suchigo_user_app/config/app_config.dart';
 import 'package:suchigo_user_app/features/auth/view/auth_screen.dart';
 import 'package:suchigo_user_app/helpers/sp_helper.dart';
 import 'package:suchigo_user_app/services/web_api_services.dart';
 import 'package:suchigo_user_app/widgets/app_button_widget.dart';
+import 'package:suchigo_user_app/widgets/custom_toast.dart';
 
 class LogoutHelper {
+  static bool _isHandlingSessionExpired = false;
+
+  static Future<void> handleSessionExpired() async {
+    if (_isHandlingSessionExpired) return;
+    _isHandlingSessionExpired = true;
+
+    try {
+      await SpHelper.clearAuthSession();
+      if (WebAPIService().dio.options.headers.containsKey('Authorization')) {
+        WebAPIService().dio.options.headers.remove('Authorization');
+      }
+
+      final context = AppConfig.navKey.currentContext;
+      if (context != null) {
+        CustomToast.show(
+          context,
+          message: 'Your session has expired. Please log in again.',
+          icon: Icons.lock_clock_outlined,
+        );
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          AuthScreen.routeName,
+          (route) => false,
+        );
+      }
+    } finally {
+      Future.delayed(const Duration(seconds: 3), () {
+        _isHandlingSessionExpired = false;
+      });
+    }
+  }
+
   static Future<void> performLogout(BuildContext context) async {
     // Clear token and all user auth session keys from SP & SecureStorage
     await SpHelper.clearAuthSession();

@@ -7,6 +7,7 @@ enum WastePropertyType {
 
 class WasteCategoryDetailModel {
   final String id;
+  final int? wasteTypeId;
   final String title;
   final String description;
   final IconData icon;
@@ -15,6 +16,7 @@ class WasteCategoryDetailModel {
 
   const WasteCategoryDetailModel({
     required this.id,
+    this.wasteTypeId,
     required this.title,
     required this.description,
     required this.icon,
@@ -22,9 +24,23 @@ class WasteCategoryDetailModel {
     this.isEnabled = true,
   });
 
-  WasteCategoryDetailModel copyWith({bool? isSelected, bool? isEnabled}) {
+  String get formattedTitle {
+    final upper = title.trim().toUpperCase();
+    if (upper == 'SANITARY WASTE') return 'Sanitary Waste';
+    if (upper == 'SOLID WASTE') return 'Solid Waste';
+    if (upper == 'ORGANIC WASTE') return 'Organic Waste';
+    if (upper == 'E-WASTE') return 'E-Waste';
+    return title;
+  }
+
+  WasteCategoryDetailModel copyWith({
+    bool? isSelected,
+    bool? isEnabled,
+    int? wasteTypeId,
+  }) {
     return WasteCategoryDetailModel(
       id: id,
+      wasteTypeId: wasteTypeId ?? this.wasteTypeId,
       title: title,
       description: description,
       icon: icon,

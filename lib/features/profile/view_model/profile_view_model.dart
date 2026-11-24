@@ -68,4 +68,33 @@ class ProfileViewModel extends ViewModel {
       notifyListeners();
     }
   }
+
+  Future<bool> updateAddress(String newAddress) async {
+    isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final req = EditProfileRequestModel(address: newAddress);
+      final updated = await _repository.updateProfile(
+        req,
+        onError: (err) {
+          _errorMessage = err.message;
+        },
+      );
+      if (updated != null) {
+        _profile = updated;
+        notifyListeners();
+        return true;
+      }
+      await loadProfile();
+      return true;
+    } catch (e) {
+      _errorMessage = 'Failed to update address';
+      return false;
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
 }

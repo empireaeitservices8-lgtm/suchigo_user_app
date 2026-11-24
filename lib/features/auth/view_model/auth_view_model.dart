@@ -48,8 +48,7 @@ class AuthViewModel extends ViewModel {
   bool get isOtpComplete => otpCode.length == 4;
 
   void toggleMode() {
-    _mode =
-        _mode == AuthMode.register ? AuthMode.login : AuthMode.register;
+    _mode = _mode == AuthMode.register ? AuthMode.login : AuthMode.register;
     _isNotRegistered = false;
     _errorMessage = null;
     notifyListeners();

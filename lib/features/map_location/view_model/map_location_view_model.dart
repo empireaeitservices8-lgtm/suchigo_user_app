@@ -27,8 +27,7 @@ class MapLocationViewModel extends ViewModel {
   MapLocationViewModel({MapLocationRepository? repository})
       : _repository = repository ?? MapLocationRepositoryImpl() {
     searchController.addListener(_onSearchChanged);
-    fetchAddressForCurrentLocation();
-    checkInitialLocationPermission();
+    _initCurrentLocation();
   }
 
   SelectedAddressModel? get selectedAddress => _selectedAddress;
@@ -45,6 +44,16 @@ class MapLocationViewModel extends ViewModel {
 
   void onMapCreated(GoogleMapController controller) {
     mapController = controller;
+    controller.animateCamera(
+      CameraUpdate.newLatLngZoom(
+        LatLng(_currentLat, _currentLng),
+        _zoom.toDouble(),
+      ),
+    );
+    // Request permission and acquire high-accuracy GPS point
+    if (!_isLocating) {
+      moveToCurrentLocation(showToastOnError: false);
+    }
   }
 
   void onCameraMove(CameraPosition position) {
@@ -71,12 +80,14 @@ class MapLocationViewModel extends ViewModel {
     if (!fetchAddress) {
       _skipNextCameraIdleGeocode = true;
     }
-    mapController?.animateCamera(
-      CameraUpdate.newLatLngZoom(
-        LatLng(lat, lng),
-        zoomLevel ?? _zoom.toDouble(),
-      ),
-    );
+    if (mapController != null) {
+      mapController!.animateCamera(
+        CameraUpdate.newLatLngZoom(
+          LatLng(lat, lng),
+          zoomLevel ?? _zoom.toDouble(),
+        ),
+      );
+    }
     if (fetchAddress) {
       fetchAddressForCurrentLocation();
     } else {
@@ -84,16 +95,29 @@ class MapLocationViewModel extends ViewModel {
     }
   }
 
-  Future<void> checkInitialLocationPermission() async {
+  Future<void> _initCurrentLocation() async {
+    // 1. Immediately read last known location for zero-latency initial placement
     try {
       final permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.always ||
           permission == LocationPermission.whileInUse) {
         _hasLocationPermission = true;
-        notifyListeners();
-        moveToCurrentLocation(showToastOnError: false);
+        final position = await Geolocator.getLastKnownPosition();
+        if (position != null) {
+          _currentLat = position.latitude;
+          _currentLng = position.longitude;
+          notifyListeners();
+          fetchAddressForCurrentLocation();
+        }
       }
     } catch (_) {}
+
+    if (_selectedAddress == null) {
+      fetchAddressForCurrentLocation();
+    }
+
+    // 2. Start GPS retrieval (requests permission if needed and centers map)
+    moveToCurrentLocation(showToastOnError: false);
   }
 
   Future<void> moveToCurrentLocation({
@@ -145,33 +169,52 @@ class MapLocationViewModel extends ViewModel {
       }
 
       _hasLocationPermission = true;
+      notifyListeners();
 
-      // 1. Immediately animate to last known position if available for instant response
+      // 1. Instantly animate to last known position if available
       Position? position;
       try {
         position = await Geolocator.getLastKnownPosition();
         if (position != null) {
+          _currentLat = position.latitude;
+          _currentLng = position.longitude;
           animateTo(position.latitude, position.longitude);
         }
       } catch (_) {}
 
-      // 2. Fetch fresh high-accuracy position
+      // 2. Fetch fresh high-accuracy position from GPS satellites
       try {
         final accuratePosition = await Geolocator.getCurrentPosition(
           locationSettings: const LocationSettings(
             accuracy: LocationAccuracy.high,
-            timeLimit: Duration(seconds: 8),
+            timeLimit: Duration(seconds: 10),
           ),
         );
         position = accuratePosition;
+        _currentLat = accuratePosition.latitude;
+        _currentLng = accuratePosition.longitude;
         animateTo(accuratePosition.latitude, accuratePosition.longitude);
       } catch (e) {
-        if (position == null && showToastOnError) {
-          CustomToast.show(
-            null,
-            message: 'Could not fetch current GPS location. Please try again.',
-            icon: Icons.location_off_rounded,
+        // Fallback to medium accuracy if high-accuracy timed out (common indoors or weak GPS)
+        try {
+          final fallbackPosition = await Geolocator.getCurrentPosition(
+            locationSettings: const LocationSettings(
+              accuracy: LocationAccuracy.medium,
+              timeLimit: Duration(seconds: 5),
+            ),
           );
+          position = fallbackPosition;
+          _currentLat = fallbackPosition.latitude;
+          _currentLng = fallbackPosition.longitude;
+          animateTo(fallbackPosition.latitude, fallbackPosition.longitude);
+        } catch (_) {
+          if (position == null && showToastOnError) {
+            CustomToast.show(
+              null,
+              message: 'Could not fetch current GPS location. Please try again.',
+              icon: Icons.location_off_rounded,
+            );
+          }
         }
       }
     } catch (e) {
@@ -245,7 +288,12 @@ class MapLocationViewModel extends ViewModel {
     if (address.placeId != null && address.placeId!.isNotEmpty) {
       try {
         final details = await _repository.getPlaceDetails(address.placeId!);
-        _selectedAddress = details;
+        final resolvedZip = details.zipCode.isNotEmpty
+            ? details.zipCode
+            : (address.zipCode.isNotEmpty
+                ? address.zipCode
+                : (RegExp(r'\b\d{6}\b').firstMatch(details.fullAddress)?.group(0) ?? ''));
+        _selectedAddress = details.copyWith(zipCode: resolvedZip);
         animateTo(details.latitude, details.longitude, fetchAddress: false);
       } catch (e) {
         _selectedAddress = address;

@@ -43,10 +43,12 @@ mixin WebAPIMixin {
       case DioExceptionType.connectionTimeout:
       case DioExceptionType.connectionError:
         msg = "Please check your internet connection and try again";
-        if (!Navigator.of(AppConfig.navKey.currentState!.context)
-            .isCurrentRoute(ConnectionFailedScreen.routeName)) {
+        final navContext = AppConfig.navKey.currentState?.context;
+        if (navContext != null &&
+            !Navigator.of(navContext)
+                .isCurrentRoute(ConnectionFailedScreen.routeName)) {
           Navigator.pushNamed(
-            AppConfig.navKey.currentState!.context,
+            navContext,
             ConnectionFailedScreen.routeName,
             arguments: ConnectionFailedScreenParams(
               failedAPI: apiFunction,
@@ -188,9 +190,11 @@ mixin WebAPIMixin {
     }
 
     //Navigating back from Connection failed screen if showing on
-    if (Navigator.of(AppConfig.navKey.currentState!.context)
-        .isCurrentRoute(ConnectionFailedScreen.routeName)) {
-      Navigator.pop(AppConfig.navKey.currentState!.context);
+    final navContext = AppConfig.navKey.currentState?.context;
+    if (navContext != null &&
+        Navigator.of(navContext)
+            .isCurrentRoute(ConnectionFailedScreen.routeName)) {
+      Navigator.pop(navContext);
     }
 
     return data;

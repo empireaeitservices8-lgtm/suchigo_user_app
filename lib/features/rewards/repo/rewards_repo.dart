@@ -54,15 +54,13 @@ class RewardsRepositoryImpl implements RewardsRepository {
       EcoVoucherModel(
         id: 'voucher_compost_kit',
         title: 'Free Organic Compost Kit',
-        description:
-            'Get a 2kg pack of organic home composting starter kit.',
+        description: 'Get a 2kg pack of organic home composting starter kit.',
         requiredPoints: 300,
       ),
       EcoVoucherModel(
         id: 'voucher_green_partner',
         title: '15% Off GreenPartner Store',
-        description:
-            'Discount on eco-friendly grocery and household goods.',
+        description: 'Discount on eco-friendly grocery and household goods.',
         requiredPoints: 450,
       ),
     ];

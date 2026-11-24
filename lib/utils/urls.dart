@@ -11,17 +11,20 @@ String urlProfile = "${urlBase}profile/";
 String urlProfileEdit = "${urlBase}profile/edit/";
 String urlBills = "${urlBase}bill-history-from-collector/";
 String urlBillHistoryFromCollector = "${urlBase}bill-history-from-collector/";
+String urlWalletHistory = "${urlBase}wallet/history/";
 String urlPickups = "${urlBase}pickups/";
 String urlRazorpayAddToWallet = "${urlBase}razorpay/add-to-wallet/";
 String urlSubWasteTypes = "${urlBase}sub-waste-types/";
+String urlWasteTypes = "${urlBase}waste-types/";
 String urlStates = "${urlBase}states/";
 String urlDistricts = "https://suchigo.pythonanywhere.com/api/districts/";
 String urlLocalBodies = "https://suchigo.pythonanywhere.com/api/localbodies/";
 String urlWards = "https://suchigo.pythonanywhere.com/api/wards/";
-String urlDisposalRates = "https://suchigo.pythonanywhere.com/api/disposal-rates/";
+String urlDisposalRates =
+    "https://suchigo.pythonanywhere.com/api/disposal-rates/";
 String urlPickupVehicleTracking = "${urlBase}pickup-vehicle-tracking/";
 String urlCalendarDates =
-    "https://suchigoapis.pythonanywhere.com/api/calendar-dates/";
+    "https://suchigo.pythonanywhere.com/api/calendar-dates/";
 
 //Register
 String urlRegistrationRequestOTP = "${urlBase}register/request-otp";

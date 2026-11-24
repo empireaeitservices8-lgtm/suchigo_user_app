@@ -3,13 +3,25 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class BookingIdCard extends StatelessWidget {
   final String bookingId;
+  final String? orderId;
   final String status;
 
   const BookingIdCard({
     super.key,
     required this.bookingId,
+    this.orderId,
     this.status = 'Confirmed',
   });
+
+  String get effectiveId {
+    if (orderId != null && orderId!.isNotEmpty) {
+      return orderId!.replaceAll('#', '').trim();
+    }
+    if (bookingId.isNotEmpty) {
+      return bookingId.replaceAll('#', '').trim();
+    }
+    return '';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,7 +42,7 @@ class BookingIdCard extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Left Booking ID
+          // Left Booking / Order ID
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -44,7 +56,7 @@ class BookingIdCard extends StatelessWidget {
               ),
               SizedBox(height: 4.h),
               Text(
-                bookingId,
+                effectiveId,
                 style: TextStyle(
                   fontSize: 18.sp,
                   fontWeight: FontWeight.w800,

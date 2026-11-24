@@ -75,6 +75,7 @@ class _BookingConfirmedScreenState extends State<BookingConfirmedScreen> {
                             // 1. Booking ID Card
                             BookingIdCard(
                               bookingId: vm.booking.bookingId,
+                              orderId: vm.booking.orderId,
                               status: vm.booking.status,
                             ),
                             SizedBox(height: 14.h),
@@ -146,12 +147,27 @@ class _BookingConfirmedScreenState extends State<BookingConfirmedScreen> {
                               height: 52.h,
                               child: OutlinedButton.icon(
                                 onPressed: () {
-                                  final rawId = vm.booking.bookingId
+                                  final rawOrderId = vm.booking.orderId;
+                                  final parsedOrderId = rawOrderId != null
+                                      ? int.tryParse(rawOrderId)
+                                      : null;
+                                  final rawBookingId = vm.booking.bookingId
                                       .replaceAll(RegExp(r'[^0-9]'), '');
-                                  final pickupId = int.tryParse(rawId) ?? 138;
+                                  final parsedBookingId =
+                                      int.tryParse(rawBookingId);
+                                  final pickupId = vm.booking.pickupId ??
+                                      (parsedBookingId != null &&
+                                              parsedBookingId > 0
+                                          ? parsedBookingId
+                                          : 138);
                                   PickupTrackingBottomSheet.show(
                                     context,
                                     pickupId: pickupId > 0 ? pickupId : 138,
+                                    orderId: parsedOrderId ??
+                                        (parsedBookingId != null &&
+                                                parsedBookingId != pickupId
+                                            ? parsedBookingId
+                                            : null),
                                   );
                                 },
                                 icon: Icon(

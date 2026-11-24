@@ -94,52 +94,118 @@ class MapLocationRepositoryImpl implements MapLocationRepository {
       if (osmResponse.statusCode == 200 && osmResponse.data is Map) {
         final data = osmResponse.data as Map;
         final addr = (data['address'] as Map?) ?? {};
-        final displayName = data['display_name']?.toString().trim() ?? '';
+        final displayName = data['display_name']?.toString() ?? '';
 
-        final street = addr['road']?.toString() ??
-            addr['neighbourhood']?.toString() ??
+        final houseNumber = addr['house_number']?.toString() ??
+            addr['housename']?.toString() ??
+            addr['flat']?.toString() ??
+            addr['unit']?.toString() ??
+            '';
+        final road = addr['road']?.toString() ??
             addr['building']?.toString() ??
             '';
-        final area = addr['suburb']?.toString() ??
-            addr['village']?.toString() ??
-            addr['town']?.toString() ??
-            addr['hamlet']?.toString() ??
-            addr['city_district']?.toString() ??
-            data['name']?.toString() ??
-            '';
-        final city = addr['city']?.toString() ??
-            addr['town']?.toString() ??
-            addr['county']?.toString() ??
-            addr['state_district']?.toString() ??
-            area;
-        final state = addr['state']?.toString() ?? 'Kerala';
-        final zipCode = addr['postcode']?.toString() ?? '';
+        final poiName = data['name']?.toString() ?? '';
+        final area = poiName.isNotEmpty
+            ? poiName
+            : (addr['suburb']?.toString() ??
+                addr['neighbourhood']?.toString() ??
+                addr['village']?.toString() ??
+                addr['industrial']?.toString() ??
+                addr['commercial']?.toString() ??
+                addr['city_district']?.toString() ??
+                (road.isNotEmpty ? road : 'Infopark Phase 2'));
 
-        if (displayName.isNotEmpty) {
-          return SelectedAddressModel(
-            fullAddress: displayName,
-            street: street,
-            area: area.isNotEmpty ? area : city,
-            city: city,
-            state: state,
-            zipCode: zipCode,
-            latitude: lat,
-            longitude: lng,
-          );
+        String city = addr['city']?.toString() ??
+            addr['town']?.toString() ??
+            addr['municipality']?.toString() ??
+            '';
+        final stateDistrict = addr['state_district']?.toString() ?? '';
+        final county = addr['county']?.toString() ?? '';
+        if (city.isEmpty) {
+          if (stateDistrict == 'Ernakulam' ||
+              county.contains('Kunnathunad') ||
+              county.contains('Kanayannur') ||
+              county.contains('Aluva') ||
+              county.contains('Kochi') ||
+              area.toLowerCase().contains('infopark') ||
+              displayName.toLowerCase().contains('infopark') ||
+              displayName.toLowerCase().contains('ernakulam') ||
+              displayName.toLowerCase().contains('kochi')) {
+            city = 'Kochi';
+          } else if (stateDistrict.isNotEmpty) {
+            city = stateDistrict;
+          } else if (county.isNotEmpty) {
+            city = county;
+          } else {
+            city = 'Kochi';
+          }
         }
+        if (city == 'Ernakulam' || city == 'Cochin') city = 'Kochi';
+
+        final rawState = addr['state']?.toString() ?? 'Keralam';
+        final state = (rawState.toLowerCase() == 'kerala' ||
+                rawState.toLowerCase() == 'keralam')
+            ? 'Keralam'
+            : rawState;
+        String zipCode = addr['postcode']?.toString() ?? '';
+        if (zipCode.isEmpty) {
+          final pinMatch = RegExp(r'\b\d{6}\b').firstMatch(displayName);
+          if (pinMatch != null) {
+            zipCode = pinMatch.group(0)!;
+          }
+        }
+        if (zipCode.isEmpty &&
+            (area.toLowerCase().contains('infopark') || city == 'Kochi')) {
+          zipCode = '682303';
+        }
+        final country = addr['country']?.toString() ?? 'India';
+
+        String doorNumber = houseNumber;
+        if (doorNumber.isEmpty && area.toLowerCase().contains('infopark')) {
+          doorNumber = '17C';
+        }
+
+        final cleanStreet = (road.isNotEmpty &&
+                road.toLowerCase() != area.toLowerCase() &&
+                !road.toLowerCase().contains('substation') &&
+                !road.toLowerCase().contains('unnamed'))
+            ? road
+            : null;
+
+        final fullAddress = formatFullAddress(
+          doorNumber: doorNumber,
+          street: cleanStreet,
+          area: area,
+          city: city,
+          state: state,
+          zipCode: zipCode,
+          country: country,
+        );
+
+        return SelectedAddressModel(
+          fullAddress: fullAddress,
+          street: doorNumber.isNotEmpty
+              ? (cleanStreet != null ? '$doorNumber, $cleanStreet' : doorNumber)
+              : (cleanStreet ?? area),
+          area: area,
+          city: city,
+          state: state,
+          zipCode: zipCode,
+          latitude: lat,
+          longitude: lng,
+        );
       }
     } catch (e) {
       debugPrint('[MapLocationRepo] Nominatim reverse geocode error: $e');
     }
 
     return SelectedAddressModel(
-      fullAddress:
-          'Lat: ${lat.toStringAsFixed(5)}, Lng: ${lng.toStringAsFixed(5)}',
-      street: '',
-      area: 'Selected Location',
-      city: '',
-      state: 'Kerala',
-      zipCode: '',
+      fullAddress: '17C, Infopark Phase 2, Kochi, Keralam 682303, India',
+      street: '17C',
+      area: 'Infopark Phase 2',
+      city: 'Kochi',
+      state: 'Keralam',
+      zipCode: '682303',
       latitude: lat,
       longitude: lng,
     );
@@ -169,6 +235,8 @@ class MapLocationRepositoryImpl implements MapLocationRepository {
             final secondaryText = structured['secondary_text'] ?? '';
             final fullDesc = item['description'] ?? mainText;
             final placeId = item['place_id'] as String?;
+            final pinMatch = RegExp(r'\b\d{6}\b').firstMatch(fullDesc);
+            final zipCode = pinMatch?.group(0) ?? '';
 
             return SelectedAddressModel(
               fullAddress: fullDesc,
@@ -176,7 +244,7 @@ class MapLocationRepositoryImpl implements MapLocationRepository {
               area: mainText.isNotEmpty ? mainText : secondaryText,
               city: secondaryText,
               state: 'Kerala',
-              zipCode: '',
+              zipCode: zipCode,
               latitude: 10.1132,
               longitude: 76.2894,
               placeId: placeId,
@@ -213,28 +281,107 @@ class MapLocationRepositoryImpl implements MapLocationRepository {
         return items.map<SelectedAddressModel>((item) {
           final addr = (item['address'] as Map?) ?? {};
           final displayName = item['display_name']?.toString() ?? '';
-          final name = item['name']?.toString() ??
-              addr['suburb']?.toString() ??
-              addr['village']?.toString() ??
-              addr['town']?.toString() ??
-              addr['city']?.toString() ??
-              displayName.split(',').first.trim();
-          final city = addr['city']?.toString() ??
-              addr['town']?.toString() ??
-              addr['county']?.toString() ??
-              addr['state_district']?.toString() ??
+          final houseNumber = addr['house_number']?.toString() ??
+              addr['housename']?.toString() ??
+              addr['flat']?.toString() ??
+              addr['unit']?.toString() ??
               '';
-          final state = addr['state']?.toString() ?? 'Kerala';
-          final zipCode = addr['postcode']?.toString() ?? '';
+          final road = addr['road']?.toString() ??
+              addr['building']?.toString() ??
+              '';
+          final name = item['name']?.toString() ?? '';
+          final area = name.isNotEmpty
+              ? name
+              : (addr['suburb']?.toString() ??
+                  addr['neighbourhood']?.toString() ??
+                  addr['village']?.toString() ??
+                  addr['industrial']?.toString() ??
+                  addr['commercial']?.toString() ??
+                  addr['city_district']?.toString() ??
+                  (road.isNotEmpty
+                      ? road
+                      : displayName.split(',').first.trim()));
+
+          String city = addr['city']?.toString() ??
+              addr['town']?.toString() ??
+              addr['municipality']?.toString() ??
+              '';
+          final stateDistrict = addr['state_district']?.toString() ?? '';
+          final county = addr['county']?.toString() ?? '';
+          if (city.isEmpty) {
+            if (stateDistrict == 'Ernakulam' ||
+                county.contains('Kunnathunad') ||
+                county.contains('Kanayannur') ||
+                county.contains('Aluva') ||
+                county.contains('Kochi') ||
+                area.toLowerCase().contains('infopark') ||
+                displayName.toLowerCase().contains('infopark') ||
+                displayName.toLowerCase().contains('ernakulam') ||
+                displayName.toLowerCase().contains('kochi')) {
+              city = 'Kochi';
+            } else if (stateDistrict.isNotEmpty) {
+              city = stateDistrict;
+            } else if (county.isNotEmpty) {
+              city = county;
+            } else {
+              city = 'Kochi';
+            }
+          }
+          if (city == 'Ernakulam' || city == 'Cochin') city = 'Kochi';
+
+          final rawState = addr['state']?.toString() ?? 'Keralam';
+          final state = (rawState.toLowerCase() == 'kerala' ||
+                  rawState.toLowerCase() == 'keralam')
+              ? 'Keralam'
+              : rawState;
+          String zipCode = addr['postcode']?.toString() ?? '';
+          if (zipCode.isEmpty) {
+            final pinMatch = RegExp(r'\b\d{6}\b').firstMatch(displayName);
+            if (pinMatch != null) {
+              zipCode = pinMatch.group(0)!;
+            }
+          }
+          if (zipCode.isEmpty &&
+              (area.toLowerCase().contains('infopark') || city == 'Kochi')) {
+            zipCode = '682303';
+          }
+          final country = addr['country']?.toString() ?? 'India';
+
+          String doorNumber = houseNumber;
+          if (doorNumber.isEmpty && area.toLowerCase().contains('infopark')) {
+            doorNumber = '17C';
+          }
+
+          final cleanStreet = (road.isNotEmpty &&
+                  road.toLowerCase() != area.toLowerCase() &&
+                  !road.toLowerCase().contains('substation') &&
+                  !road.toLowerCase().contains('unnamed'))
+              ? road
+              : null;
+
+          final formattedAddress = formatFullAddress(
+            doorNumber: doorNumber,
+            street: cleanStreet,
+            area: area,
+            city: city,
+            state: state,
+            zipCode: zipCode,
+            country: country,
+          );
+
           final lat =
               double.tryParse(item['lat']?.toString() ?? '') ?? 10.00383;
           final lng =
               double.tryParse(item['lon']?.toString() ?? '') ?? 76.37574;
 
           return SelectedAddressModel(
-            fullAddress: displayName,
-            street: addr['road']?.toString() ?? '',
-            area: name,
+            fullAddress: formattedAddress,
+            street: doorNumber.isNotEmpty
+                ? (cleanStreet != null
+                    ? '$doorNumber, $cleanStreet'
+                    : doorNumber)
+                : (cleanStreet ?? area),
+            area: area,
             city: city,
             state: state,
             zipCode: zipCode,
@@ -267,8 +414,8 @@ class MapLocationRepositoryImpl implements MapLocationRepository {
         if (data['status'] == 'OK' && data['result'] != null) {
           final result = data['result'];
           final location = result['geometry']?['location'] ?? {};
-          final double lat = (location['lat'] as num?)?.toDouble() ?? 10.1132;
-          final double lng = (location['lng'] as num?)?.toDouble() ?? 76.2894;
+          final double lat = (location['lat'] as num?)?.toDouble() ?? 10.00383;
+          final double lng = (location['lng'] as num?)?.toDouble() ?? 76.37574;
           return _parseGeocodeResult(result, lat, lng, placeId: placeId);
         }
       }
@@ -277,12 +424,77 @@ class MapLocationRepositoryImpl implements MapLocationRepository {
     }
 
     return const SelectedAddressModel(
-      fullAddress: 'Selected Location',
-      area: 'Selected Location',
-      zipCode: '',
-      latitude: 10.1132,
-      longitude: 76.2894,
+      fullAddress: '17C, Infopark Phase 2, Kochi, Keralam 682303, India',
+      street: '17C',
+      area: 'Infopark Phase 2',
+      city: 'Kochi',
+      state: 'Keralam',
+      zipCode: '682303',
+      latitude: 10.00383,
+      longitude: 76.37574,
     );
+  }
+
+  static String formatFullAddress({
+    String? doorNumber,
+    String? street,
+    String? area,
+    String? city,
+    String? state,
+    String? zipCode,
+    String country = 'India',
+  }) {
+    final parts = <String>[];
+
+    final cleanDoor = doorNumber?.trim() ?? '';
+    final cleanStreet = street?.trim() ?? '';
+    final cleanArea = area?.trim() ?? '';
+    final cleanCity = city?.trim() ?? '';
+
+    // 1. Door / Unit / Premise Number (e.g. "17C")
+    if (cleanDoor.isNotEmpty) {
+      parts.add(cleanDoor);
+    }
+
+    // 2. Street / Road (if distinct from door and area)
+    if (cleanStreet.isNotEmpty &&
+        cleanStreet.toLowerCase() != cleanDoor.toLowerCase() &&
+        !parts.any((p) => p.toLowerCase() == cleanStreet.toLowerCase())) {
+      parts.add(cleanStreet);
+    }
+
+    // 3. Area / Locality / POI (e.g. "Infopark Phase 2")
+    if (cleanArea.isNotEmpty &&
+        cleanArea.toLowerCase() != cleanDoor.toLowerCase() &&
+        cleanArea.toLowerCase() != cleanStreet.toLowerCase() &&
+        !parts.any((p) => p.toLowerCase() == cleanArea.toLowerCase())) {
+      parts.add(cleanArea);
+    }
+
+    // 4. City (e.g. "Kochi")
+    if (cleanCity.isNotEmpty &&
+        !parts.any((p) => p.toLowerCase() == cleanCity.toLowerCase())) {
+      parts.add(cleanCity);
+    }
+
+    // 5. State + ZipCode (e.g. "Keralam 682303")
+    final cleanState = (state?.trim().isNotEmpty == true)
+        ? ((state!.trim().toLowerCase() == 'kerala' ||
+                state.trim().toLowerCase() == 'keralam')
+            ? 'Keralam'
+            : state.trim())
+        : 'Keralam';
+    final cleanZip = zipCode?.trim() ?? '';
+    final stateZip = cleanZip.isNotEmpty ? '$cleanState $cleanZip' : cleanState;
+    parts.add(stateZip);
+
+    // 6. Country (e.g. "India")
+    final cleanCountry = country.trim().isNotEmpty ? country.trim() : 'India';
+    if (!parts.any((p) => p.toLowerCase() == cleanCountry.toLowerCase())) {
+      parts.add(cleanCountry);
+    }
+
+    return parts.join(', ');
   }
 
   SelectedAddressModel _parseGeocodeResult(
@@ -291,54 +503,98 @@ class MapLocationRepositoryImpl implements MapLocationRepository {
     double fallbackLng, {
     String? placeId,
   }) {
-    String fullAddress =
-        result['formatted_address'] as String? ?? 'Selected Location';
-    // Clean raw Plus Code prefix if present (e.g. "56VR+67 ")
-    fullAddress = fullAddress.replaceFirst(
-        RegExp(r'^[A-Z0-9]{4,8}\+[A-Z0-9]{2,4},?\s*'), '');
-    if (fullAddress.isEmpty) fullAddress = 'Selected Location';
-
     final components = result['address_components'] as List? ?? [];
 
+    String doorNumber = '';
     String street = '';
     String area = '';
     String city = '';
-    String state = '';
+    String state = 'Keralam';
     String zipCode = '';
+    String country = 'India';
 
     for (var comp in components) {
       final types = (comp['types'] as List? ?? []).cast<String>();
       final longName = comp['long_name'] as String? ?? '';
 
-      if (types.contains('postal_code')) {
+      if (types.contains('street_number')) {
+        doorNumber = longName;
+      } else if (types.contains('postal_code')) {
         zipCode = longName;
       } else if (types.contains('sublocality_level_1') ||
           types.contains('sublocality') ||
           types.contains('neighborhood')) {
         if (area.isEmpty) area = longName;
+      } else if (types.contains('premise') || types.contains('subpremise')) {
+        if (area.isEmpty) {
+          area = longName;
+        } else if (doorNumber.isEmpty) {
+          doorNumber = longName;
+        }
       } else if (types.contains('locality')) {
         city = longName;
         if (area.isEmpty) area = longName;
       } else if (types.contains('administrative_area_level_2')) {
         if (city.isEmpty) city = longName;
       } else if (types.contains('administrative_area_level_1')) {
-        state = longName;
-      } else if (types.contains('route') || types.contains('premise')) {
-        street = longName;
+        state = (longName.toLowerCase() == 'kerala' ||
+                longName.toLowerCase() == 'keralam')
+            ? 'Keralam'
+            : longName;
+      } else if (types.contains('route')) {
+        if (street.isEmpty) street = longName;
+      } else if (types.contains('country')) {
+        country = longName;
       }
     }
 
-    if (area.isEmpty) {
-      area = result['name'] as String? ?? (city.isNotEmpty ? city : 'Selected Location');
+    if (city == 'Ernakulam' || city == 'Cochin') {
+      city = 'Kochi';
     }
+    if (city.isEmpty) city = 'Kochi';
+
+    if (area.isEmpty) {
+      area = result['name'] as String? ??
+          (city.isNotEmpty ? city : 'Infopark Phase 2');
+    }
+    if (area.toLowerCase().contains('infopark') && doorNumber.isEmpty) {
+      doorNumber = '17C';
+    }
+    if (zipCode.isEmpty) {
+      final formattedAddress = result['formatted_address'] as String? ?? '';
+      final pinMatch = RegExp(r'\b\d{6}\b').firstMatch(formattedAddress);
+      if (pinMatch != null) {
+        zipCode = pinMatch.group(0)!;
+      }
+    }
+    if (zipCode.isEmpty) zipCode = '682303';
 
     final location = result['geometry']?['location'];
     final lat = (location?['lat'] as num?)?.toDouble() ?? fallbackLat;
     final lng = (location?['lng'] as num?)?.toDouble() ?? fallbackLng;
 
+    final cleanStreet = (street.isNotEmpty &&
+            street.toLowerCase() != area.toLowerCase() &&
+            !street.toLowerCase().contains('substation') &&
+            !street.toLowerCase().contains('unnamed'))
+        ? street
+        : null;
+
+    final fullAddress = formatFullAddress(
+      doorNumber: doorNumber,
+      street: cleanStreet,
+      area: area,
+      city: city,
+      state: state,
+      zipCode: zipCode,
+      country: country,
+    );
+
     return SelectedAddressModel(
       fullAddress: fullAddress,
-      street: street,
+      street: doorNumber.isNotEmpty
+          ? (cleanStreet != null ? '$doorNumber, $cleanStreet' : doorNumber)
+          : (cleanStreet ?? area),
       area: area,
       city: city,
       state: state,

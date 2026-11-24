@@ -14,13 +14,25 @@ import 'package:provider/provider.dart';
 import 'features/splashscreen/view/splashscreen.dart';
 import 'providers/language_provider.dart';
 import 'providers/theme_provider.dart';
+import 'services/network_service.dart';
 import 'utils/interceptors.dart';
 import 'utils/localization.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:suchigo_user_app/services/push_notification_service.dart';
 import 'utils/routes.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'utils/themes.dart';
+import 'widgets/network_banner_overlay.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  try {
+    await Firebase.initializeApp();
+    await PushNotificationService.instance.initialize();
+  } catch (e) {
+    debugPrint('[Firebase] Initialization error: $e');
+  }
+  NetworkService.instance.initialize();
   runApp(const MyApp());
 }
 
@@ -34,6 +46,9 @@ class MyApp extends StatelessWidget {
     );
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider.value(
+          value: NetworkService.instance,
+        ),
         ChangeNotifierProvider(
           create: (context) => ThemeProvider(),
         ),
@@ -88,7 +103,10 @@ class MyApp extends StatelessWidget {
                   StackTrace.current.toString().log('', true);
                   child = AppStackInterceptorBuilder(child: child!);
                 }
-                return FToastBuilder()(context, child);
+                final wrappedChild = NetworkBannerOverlay(
+                  child: child ?? const SizedBox.shrink(),
+                );
+                return FToastBuilder()(context, wrappedChild);
               },
             );
           },

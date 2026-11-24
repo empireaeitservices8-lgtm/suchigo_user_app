@@ -1,5 +1,7 @@
+import 'package:suchigo_user_app/helpers/sp_helper.dart';
 import 'package:suchigo_user_app/models/app_error_model.dart';
 import 'package:suchigo_user_app/services/web_api_services.dart';
+import 'package:suchigo_user_app/utils/sp_keys.dart' as sp_keys;
 import 'package:suchigo_user_app/utils/urls.dart';
 import '../model/profile_model.dart';
 
@@ -25,11 +27,16 @@ class ProfileRepositoryImpl implements ProfileRepository {
     Function(AppError error)? onError,
   }) async {
     await _apiService.initTokenToHeader();
-    return _apiService.executeAPI<ProfileResponseModel>(
+    final profile = await _apiService.executeAPI<ProfileResponseModel>(
       methodToCall: _apiService.dio.get(urlProfile),
       converter: ProfileResponseModel.fromJson,
       onError: onError,
     );
+    final uid = profile.resolvedUserId;
+    if (uid != null) {
+      await SpHelper.saveString(sp_keys.keyUserId, uid.toString());
+    }
+    return profile;
   }
 
   @override
@@ -38,7 +45,7 @@ class ProfileRepositoryImpl implements ProfileRepository {
     Function(AppError error)? onError,
   }) async {
     await _apiService.initTokenToHeader();
-    return _apiService.executeAPI<ProfileResponseModel>(
+    final profile = await _apiService.executeAPI<ProfileResponseModel>(
       methodToCall: _apiService.dio.patch(
         urlProfileEdit,
         data: request.toJson(),
@@ -46,5 +53,10 @@ class ProfileRepositoryImpl implements ProfileRepository {
       converter: ProfileResponseModel.fromJson,
       onError: onError,
     );
+    final uid = profile.resolvedUserId;
+    if (uid != null) {
+      await SpHelper.saveString(sp_keys.keyUserId, uid.toString());
+    }
+    return profile;
   }
 }

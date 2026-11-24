@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:suchigo_user_app/features/profile/model/profile_model.dart';
 import 'package:suchigo_user_app/helpers/sp_helper.dart';
 import 'package:suchigo_user_app/services/web_api_services.dart';
+import 'package:suchigo_user_app/utils/sp_keys.dart' as sp_keys;
 import 'package:suchigo_user_app/utils/urls.dart';
 import '../model/home_model.dart';
 
@@ -19,8 +20,8 @@ class HomeRepositoryImpl implements HomeRepository {
   Future<HomeDashboardModel> getDashboardData() async {
     String userName = 'USER';
     double userProgress = 0.65;
-    int treesSaved = 11235;
-    int rewardPoints = 300;
+    int treesSaved = 0;
+    int rewardPoints = 100;
     int monthlyWasteKg = 50;
     ProfileResponseModel? profileData;
 
@@ -37,13 +38,19 @@ class HomeRepositoryImpl implements HomeRepository {
         } else if (profile.user?.firstName != null &&
             profile.user!.firstName!.isNotEmpty) {
           final lastName = profile.user?.lastName ?? '';
-          userName = '${profile.user!.firstName!} $lastName'.trim().toUpperCase();
+          userName =
+              '${profile.user!.firstName!} $lastName'.trim().toUpperCase();
         } else if (profile.username.isNotEmpty) {
           userName = profile.username.toUpperCase();
         }
 
         if (userName.isNotEmpty && userName != 'USER') {
           SpHelper.saveString('KEY_USER_NAME', userName);
+        }
+
+        final resolvedUserId = profile.resolvedUserId;
+        if (resolvedUserId != null) {
+          await SpHelper.saveString(sp_keys.keyUserId, resolvedUserId.toString());
         }
 
         if (profile.numberOfBags > 0) {

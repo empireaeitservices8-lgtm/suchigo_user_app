@@ -23,9 +23,50 @@ class WasteDetailsRepositoryImpl implements WasteDetailsRepository {
   @override
   Future<List<WasteCategoryDetailModel>> getWasteCategories(
       WastePropertyType type) async {
-    return const [
+    int sanitaryId = 4;
+    int solidId = 3;
+    int organicId = 1;
+    int eWasteId = 13;
+
+    try {
+      final response = await _apiService.dio.get(urlWasteTypes);
+      List rawList = [];
+      if (response.data is List) {
+        rawList = response.data as List;
+      } else if (response.data is Map) {
+        if (response.data['data'] is List) {
+          rawList = response.data['data'] as List;
+        } else if (response.data['results'] is List) {
+          rawList = response.data['results'] as List;
+        }
+      }
+
+      for (var item in rawList) {
+        if (item is Map) {
+          final id = int.tryParse(item['id']?.toString() ?? '');
+          final name = (item['name']?.toString() ?? '').toLowerCase();
+          if (id != null) {
+            if (name.contains('sanitary') ||
+                name.contains('daiper') ||
+                name.contains('diaper') ||
+                name.contains('pad')) {
+              sanitaryId = id;
+            } else if (name.contains('organic') || name.contains('compost')) {
+              organicId = id;
+            } else if (name.contains('e-waste') || name.contains('electronic')) {
+              eWasteId = id;
+            } else if (name.contains('solid') || name.contains('hazard')) {
+              solidId = id;
+            }
+          }
+        }
+      }
+    } catch (_) {}
+
+    return [
       WasteCategoryDetailModel(
         id: 'sanitary',
+        wasteTypeId: sanitaryId,
         title: 'SANITARY WASTE',
         description: 'Diaper, Sanitary Pad,\nExpired Medicine, Hair Waste',
         icon: Icons.baby_changing_station,
@@ -33,6 +74,7 @@ class WasteDetailsRepositoryImpl implements WasteDetailsRepository {
       ),
       WasteCategoryDetailModel(
         id: 'solid',
+        wasteTypeId: solidId,
         title: 'SOLID WASTE',
         description: 'Paper, Plastic, Metals,\nE-Waste, Glass, Wood',
         icon: Icons.delete_outline_rounded,
@@ -40,6 +82,7 @@ class WasteDetailsRepositoryImpl implements WasteDetailsRepository {
       ),
       WasteCategoryDetailModel(
         id: 'organic',
+        wasteTypeId: organicId,
         title: 'ORGANIC WASTE',
         description: 'Food Scraps, Garden\nWaste, Compostables',
         icon: Icons.eco_outlined,
@@ -47,6 +90,7 @@ class WasteDetailsRepositoryImpl implements WasteDetailsRepository {
       ),
       WasteCategoryDetailModel(
         id: 'e_waste',
+        wasteTypeId: eWasteId,
         title: 'E-WASTE',
         description: 'Electronics, Batteries,\nCables, Old Devices',
         icon: Icons.devices_other_outlined,

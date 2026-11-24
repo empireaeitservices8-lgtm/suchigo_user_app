@@ -67,6 +67,8 @@ class SchedulePickupRequestModel {
   final String landmark;
   final int wasteType;
   final int? subWasteType;
+  final double? latitude;
+  final double? longitude;
 
   const SchedulePickupRequestModel({
     required this.jurisdiction,
@@ -80,8 +82,10 @@ class SchedulePickupRequestModel {
     this.numberOfBags = 1,
     this.secondaryNumber = '',
     this.landmark = '',
-    this.wasteType = 1,
+    this.wasteType = 4,
     this.subWasteType,
+    this.latitude,
+    this.longitude,
   });
 
   Map<String, dynamic> toJson() {
@@ -137,10 +141,14 @@ class SchedulePickupRequestModel {
       'ward_name': cleanWard,
       'pickup_date': cleanDate,
       'pickup_time_slot': '9:00 AM – 12:00 PM',
-      'items_description': 'General household waste',
+      'items_description': wasteType == 4
+          ? 'Sanitary waste'
+          : 'General household waste',
       'waste_type': wasteType,
       'sub_waste_type': subWasteType,
       'landmark': landmark.isNotEmpty ? landmark : null,
+      'latitude': latitude,
+      'longitude': longitude,
     };
   }
 }
@@ -149,6 +157,9 @@ class PickupResponseModel {
   final int id;
   final String wasteTypeName;
   final String? subWasteTypeName;
+  final double? weight;
+  final double? amount;
+  final double? bagCharge;
   final String fullName;
   final String email;
   final String contactNumber;
@@ -166,6 +177,12 @@ class PickupResponseModel {
   final String itemsDescription;
   final String? vehicleName;
   final String? vehicleNumber;
+  final String? collectorName;
+  final String? collectorPhone;
+  final int? orderNumber;
+  final int? orderId;
+  final double? latitude;
+  final double? longitude;
   final String? createdAt;
   final int? user;
   final int? wasteType;
@@ -175,6 +192,9 @@ class PickupResponseModel {
     required this.id,
     this.wasteTypeName = '',
     this.subWasteTypeName,
+    this.weight,
+    this.amount,
+    this.bagCharge,
     required this.fullName,
     required this.email,
     required this.contactNumber,
@@ -192,6 +212,12 @@ class PickupResponseModel {
     this.itemsDescription = '',
     this.vehicleName,
     this.vehicleNumber,
+    this.collectorName,
+    this.collectorPhone,
+    this.orderNumber,
+    this.orderId,
+    this.latitude,
+    this.longitude,
     this.createdAt,
     this.user,
     this.wasteType,
@@ -203,6 +229,9 @@ class PickupResponseModel {
       id: int.tryParse(json['id']?.toString() ?? '') ?? 0,
       wasteTypeName: json['waste_type_name']?.toString() ?? '',
       subWasteTypeName: json['sub_waste_type_name']?.toString(),
+      weight: double.tryParse(json['weight']?.toString() ?? ''),
+      amount: double.tryParse(json['amount']?.toString() ?? ''),
+      bagCharge: double.tryParse(json['bag_charge']?.toString() ?? ''),
       fullName: json['full_name']?.toString() ?? '',
       email: json['email']?.toString() ?? '',
       contactNumber: json['contact_number']?.toString() ?? '',
@@ -220,6 +249,12 @@ class PickupResponseModel {
       itemsDescription: json['items_description']?.toString() ?? '',
       vehicleName: json['vehicle_name']?.toString(),
       vehicleNumber: json['vehicle_number']?.toString(),
+      collectorName: json['collector_name']?.toString(),
+      collectorPhone: json['collector_phone']?.toString(),
+      orderNumber: int.tryParse(json['order_number']?.toString() ?? ''),
+      orderId: int.tryParse(json['order_id']?.toString() ?? ''),
+      latitude: double.tryParse(json['latitude']?.toString() ?? ''),
+      longitude: double.tryParse(json['longitude']?.toString() ?? ''),
       createdAt: json['created_at']?.toString(),
       user: int.tryParse(json['user']?.toString() ?? ''),
       wasteType: int.tryParse(json['waste_type']?.toString() ?? ''),
@@ -331,11 +366,13 @@ class WardModel {
 class DisposalRateModel {
   final int id;
   final int localBodyId;
+  final String localBodyName;
   final double ratePerKg;
 
   const DisposalRateModel({
     required this.id,
     required this.localBodyId,
+    this.localBodyName = '',
     required this.ratePerKg,
   });
 
@@ -345,6 +382,8 @@ class DisposalRateModel {
       localBodyId: int.tryParse(json['local_body_id']?.toString() ?? '') ??
           int.tryParse(json['local_body']?.toString() ?? '') ??
           0,
+      localBodyName: json['local_body_name']?.toString() ??
+          (json['local_body'] is String ? json['local_body'].toString() : ''),
       ratePerKg: double.tryParse(json['rate_per_kg']?.toString() ?? '') ?? 0.0,
     );
   }

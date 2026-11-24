@@ -32,8 +32,8 @@ class HomeDashboardModel {
     this.userName = 'USER',
     this.profile,
     this.userProgress = 0.65,
-    this.treesSaved = 11235,
-    this.rewardPoints = 300,
+    this.treesSaved = 0,
+    this.rewardPoints = 0,
     this.monthlyWasteKg = 50,
     this.categories = const [],
   });
